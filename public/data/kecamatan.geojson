@@ -1,0 +1,356 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "id": 1,
+    "slug": "selebar",
+    "nama": "Selebar",
+    "kritis": "Sangat Kritis",
+    "kritis_class": "sangat",
+    "luas": 320.0,
+    "bpdas": "BPDAS Ketahun Bengkulu"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       102.24343,
+       -3.77517
+      ],
+      [
+       102.27086,
+       -3.76345
+      ],
+      [
+       102.27771,
+       -3.80448
+      ],
+      [
+       102.25029,
+       -3.81621
+      ],
+      [
+       102.24343,
+       -3.77517
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": 2,
+    "slug": "kmelayu",
+    "nama": "Kampung Melayu",
+    "kritis": "Kritis",
+    "kritis_class": "kritis",
+    "luas": 210.8,
+    "bpdas": "BPDAS Ketahun Bengkulu"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       102.27086,
+       -3.76345
+      ],
+      [
+       102.29829,
+       -3.75759
+      ],
+      [
+       102.30171,
+       -3.79862
+      ],
+      [
+       102.27771,
+       -3.80448
+      ],
+      [
+       102.27086,
+       -3.76345
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": 3,
+    "slug": "gcempaka",
+    "nama": "Gading Cempaka",
+    "kritis": "Agak Kritis",
+    "kritis_class": "agak",
+    "luas": 145.2,
+    "bpdas": "BPDAS Ketahun Bengkulu"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       102.29829,
+       -3.75759
+      ],
+      [
+       102.32571,
+       -3.75466
+      ],
+      [
+       102.32743,
+       -3.79569
+      ],
+      [
+       102.30171,
+       -3.79862
+      ],
+      [
+       102.29829,
+       -3.75759
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": 4,
+    "slug": "ratuagung",
+    "nama": "Ratu Agung",
+    "kritis": "Potensial Kritis",
+    "kritis_class": "potensial",
+    "luas": 175.6,
+    "bpdas": "BPDAS Ketahun Bengkulu"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       102.32571,
+       -3.75466
+      ],
+      [
+       102.35314,
+       -3.76052
+      ],
+      [
+       102.34971,
+       -3.80155
+      ],
+      [
+       102.32743,
+       -3.79569
+      ],
+      [
+       102.32571,
+       -3.75466
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": 5,
+    "slug": "rsamban",
+    "nama": "Ratu Samban",
+    "kritis": "Agak Kritis",
+    "kritis_class": "agak",
+    "luas": 112.0,
+    "bpdas": "BPDAS Ketahun Bengkulu"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       102.25029,
+       -3.81621
+      ],
+      [
+       102.27771,
+       -3.80448
+      ],
+      [
+       102.28114,
+       -3.85138
+      ],
+      [
+       102.25371,
+       -3.86017
+      ],
+      [
+       102.25029,
+       -3.81621
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": 6,
+    "slug": "spati",
+    "nama": "Singgaran Pati",
+    "kritis": "Sangat Kritis",
+    "kritis_class": "sangat",
+    "luas": 187.0,
+    "bpdas": "BPDAS Ketahun Bengkulu"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       102.27771,
+       -3.80448
+      ],
+      [
+       102.30171,
+       -3.79862
+      ],
+      [
+       102.30514,
+       -3.84552
+      ],
+      [
+       102.28114,
+       -3.85138
+      ],
+      [
+       102.27771,
+       -3.80448
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": 7,
+    "slug": "sserut",
+    "nama": "Sungai Serut",
+    "kritis": "Kritis",
+    "kritis_class": "kritis",
+    "luas": 98.4,
+    "bpdas": "BPDAS Ketahun Bengkulu"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       102.30171,
+       -3.79862
+      ],
+      [
+       102.32743,
+       -3.79569
+      ],
+      [
+       102.32914,
+       -3.84259
+      ],
+      [
+       102.30514,
+       -3.84552
+      ],
+      [
+       102.30171,
+       -3.79862
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": 8,
+    "slug": "mbhulu",
+    "nama": "Muara Bangka Hulu",
+    "kritis": "Sangat Kritis",
+    "kritis_class": "sangat",
+    "luas": 145.2,
+    "bpdas": "BPDAS Ketahun Bengkulu"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       102.32743,
+       -3.79569
+      ],
+      [
+       102.34971,
+       -3.80155
+      ],
+      [
+       102.348,
+       -3.84845
+      ],
+      [
+       102.32914,
+       -3.84259
+      ],
+      [
+       102.32743,
+       -3.79569
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": 9,
+    "slug": "tsegara",
+    "nama": "Teluk Segara",
+    "kritis": "Potensial Kritis",
+    "kritis_class": "potensial",
+    "luas": 88.5,
+    "bpdas": "BPDAS Ketahun Bengkulu"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       102.25371,
+       -3.86017
+      ],
+      [
+       102.28114,
+       -3.85138
+      ],
+      [
+       102.28457,
+       -3.89241
+      ],
+      [
+       102.25886,
+       -3.89828
+      ],
+      [
+       102.25371,
+       -3.86017
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}
