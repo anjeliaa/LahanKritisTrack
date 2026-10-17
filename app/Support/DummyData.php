@@ -359,22 +359,23 @@ class DummyData
                     'warna' => '#d9f99d',
                 ],
             ],
+            // Kelas pada data peta lahan kritis (lahan_kritis.geojson): tidak sampai ada "Sangat Kritis".
             'kritis_opts' => [
                 [
-                    'v' => 'sangat',
-                    'l' => 'Sangat Kritis',
+                    'v' => 'tidak',
+                    'l' => 'Tidak Kritis',
                 ],
                 [
-                    'v' => 'kritis',
-                    'l' => 'Kritis',
+                    'v' => 'potensial',
+                    'l' => 'Potensial Kritis',
                 ],
                 [
                     'v' => 'agak',
                     'l' => 'Agak Kritis',
                 ],
                 [
-                    'v' => 'potensial',
-                    'l' => 'Potensial Kritis',
+                    'v' => 'kritis',
+                    'l' => 'Kritis',
                 ],
             ],
             'users' => [

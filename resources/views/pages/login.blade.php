@@ -50,9 +50,13 @@
             <div class="alert">{{ session('error') }}</div>
             @endif
 
+            @error('username')
+            <div class="alert">{{ $message }}</div>
+            @enderror
+
             <div class="field">
-                <label for="email">Alamat email</label>
-                <div class="iconfield"><svg class="ic"><use href="#i-mail"/></svg><input id="email" name="email" type="email" class="input" placeholder="admin@lahankritis.bengkulukota.go.id" value="{{ old('email') }}" required></div>
+                <label for="username">Username</label>
+                <div class="iconfield"><svg class="ic"><use href="#i-mail"/></svg><input id="username" name="username" type="text" class="input" placeholder="mis. anjelia.admin" value="{{ old('username') }}" autocomplete="username" autofocus required></div>
             </div>
             <div class="field">
                 <label for="password">Kata sandi</label>
@@ -63,17 +67,12 @@
                 </div>
             </div>
             <div class="login-row">
-                <label><input type="checkbox" name="remember" checked> Ingat perangkat ini</label>
-                <a href="#" data-toast="Fitur reset kata sandi akan tersedia setelah backend terhubung">Lupa kata sandi?</a>
+                <label><input type="checkbox" name="remember" value="1"> Ingat perangkat ini</label>
+                <a href="#" data-toast="Hubungi Admin sistem untuk mengatur ulang kata sandi">Lupa kata sandi?</a>
             </div>
             <button type="submit" class="login-submit">Masuk ke dashboard <svg class="ic"><use href="#i-arrowright"/></svg></button>
             <div class="login-note"><svg class="ic"><use href="#i-lock"/></svg> Akses dilindungi dan seluruh aktivitas pengguna dicatat untuk keamanan data.</div>
 
-            <div class="login-demo">
-                Mode demo (tanpa database) — email berisi “petugas” masuk sebagai Petugas, selain itu sebagai Admin.<br>
-                <a href="{{ route('login.demo', ['role' => 'admin']) }}">Masuk cepat: Admin</a>
-                <a href="{{ route('login.demo', ['role' => 'petugas']) }}">Masuk cepat: Petugas</a>
-            </div>
         </form>
         <div class="login-foot"><span>&copy; 2026 LahanKritisTrack</span><a href="#" data-toast="Hubungi admin sistem untuk bantuan teknis">Butuh bantuan teknis?</a></div>
     </main>

@@ -7,24 +7,18 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Entitas USER pada ERD: id_user, nama, username, password, role, created_at.
      */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
+            $table->id('id_user');
+            $table->string('nama');
+            $table->string('username')->unique();
             $table->string('password');
+            $table->enum('role', ['admin', 'petugas'])->default('petugas');
             $table->rememberToken();
-            $table->timestamps();
-        });
-
-        Schema::create('password_reset_tokens', function (Blueprint $table) {
-            $table->string('email')->primary();
-            $table->string('token');
-            $table->timestamp('created_at')->nullable();
+            $table->timestamps(); // created_at (sesuai ERD) + updated_at
         });
 
         Schema::create('sessions', function (Blueprint $table) {
@@ -37,13 +31,9 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('users');
     }
 };

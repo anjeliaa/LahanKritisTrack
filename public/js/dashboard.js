@@ -9,7 +9,7 @@
   const donut = document.getElementById('chart-donut');
   if (donut) new Chart(donut, {
     type: 'doughnut',
-    data: { labels: D.donut.labels, datasets: [{ data: D.donut.values, backgroundColor: ['#ef4444', '#f97316', '#eab308', '#10b981'], borderColor: dark ? '#111a2b' : '#fff', borderWidth: 2 }] },
+    data: { labels: D.donut.labels, datasets: [{ data: D.donut.values, backgroundColor: D.donut.colors, borderColor: dark ? '#111a2b' : '#fff', borderWidth: 2 }] },
     options: { responsive: true, maintainAspectRatio: false, cutout: '50%', plugins: { legend: { position: 'right', labels: { usePointStyle: true, pointStyle: 'rect', padding: 14 } } } }
   });
   const bar = document.getElementById('chart-bar');

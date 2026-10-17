@@ -2,35 +2,51 @@
 
 namespace App\Http\Controllers;
 
-use App\Support\DummyData;
+use App\Support\Catalog;
+use App\Support\Ui;
+use Illuminate\Support\Collection;
 
-/**
- * Basis untuk halaman internal (Admin & Petugas).
- * Saat backend siap, ganti DummyData::all() dengan query Eloquent.
- */
+/** Basis halaman internal (Admin & Petugas): menyiapkan data bersama untuk layout, modal, dan peta. */
 abstract class InternalController extends Controller
 {
     protected string $role;
 
-    protected function render(string $view, string $active, string $headerKey, array $extra = [])
+    /**
+     * @param  array  $stats  ubin statistik pada header halaman
+     * @param  array  $data   data khusus halaman; `kegiatan` (Collection) boleh diisi agar tidak query ulang
+     */
+    protected function render(string $view, string $active, string $headerKey, array $stats, array $data = [])
     {
-        $d = DummyData::all();
+        /** @var Collection $kegiatan */
+        $kegiatan = $data['kegiatan'] ?? Catalog::kegiatan();
+        $kecamatan = Catalog::kecamatan();
+
+        $app = Catalog::app($kecamatan, $kegiatan, $data['app_extra'] ?? []);
+        unset($data['app_extra']);
 
         return view($view, array_merge([
             'role'        => $this->role,
-            'tabs'        => $d['tabs'][$this->role],
+            'tabs'        => Ui::tabs($this->role),
             'active'      => $active,
-            'ph'          => $d['headers'][$headerKey],
-            'kecamatan'   => $d['kecamatan'],
-            'kegiatan'    => $d['kegiatan'],
-            'monitoring'  => $d['monitoring'],
-            'status_opts' => $d['status_opts'],
-            'kritis_opts' => $d['kritis_opts'],
-            'app'         => [
-                'kecamatan' => $d['kecamatan'],
-                'kegiatan'  => $d['kegiatan'],
-                'dashboard' => $d['dashboard'],
-            ],
-        ], $extra));
+            'ph'          => Ui::header($headerKey, $stats),
+            'kecamatan'   => $kecamatan,
+            'kegiatan'    => $kegiatan,
+            'petak'       => Catalog::petak(),
+            'status_opts' => config('lahan.status'),
+            'kondisi_opts' => config('lahan.kondisi'),
+            'kritis_opts' => Catalog::kritisOpts(),
+            'app'         => $app,
+        ], $data));
+    }
+
+    /** @return array{0:int,1:int,2:int,3:int} total, berjalan, selesai, rencana */
+    protected function hitungStatus(Collection $kegiatan): array
+    {
+        return [
+            $kegiatan->count(),
+            $kegiatan->where('status', 'Berjalan')->count(),
+            $kegiatan->where('status', 'Selesai')->count(),
+            $kegiatan->where('status', 'Rencana')->count(),
+        ];
     }
 }

@@ -3,18 +3,17 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
-/**
- * Autentikasi SEMENTARA (tahap frontend): tanpa database.
- * Email yang mengandung "petugas" => role petugas, selain itu => admin.
- * Ganti dengan Laravel Auth (Breeze/Fortify) saat backend dibuat.
- */
 class AuthController extends Controller
 {
     public function show(Request $request)
     {
-        if ($role = $request->session()->get('role')) {
-            return redirect()->route($role === 'admin' ? 'admin.dashboard' : 'petugas.peta');
+        if ($user = $request->user()) {
+            return redirect()->route($this->home($user->role));
         }
 
         return view('pages.login');
@@ -23,36 +22,48 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $data = $request->validate([
-            'email'    => ['required', 'email'],
-            'password' => ['required', 'min:3'],
+            'username' => ['required', 'string'],
+            'password' => ['required', 'string'],
         ], [
-            'email.required'    => 'Alamat email wajib diisi.',
-            'email.email'       => 'Format email tidak valid.',
+            'username.required' => 'Username wajib diisi.',
             'password.required' => 'Kata sandi wajib diisi.',
         ]);
 
-        return $this->enter($request, str_contains(strtolower($data['email']), 'petugas') ? 'petugas' : 'admin');
-    }
+        $key = Str::lower($data['username']).'|'.$request->ip();
 
-    public function demo(Request $request, string $role)
-    {
-        abort_unless(in_array($role, ['admin', 'petugas'], true), 404);
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            $menit = ceil(RateLimiter::availableIn($key) / 60);
 
-        return $this->enter($request, $role);
+            throw ValidationException::withMessages([
+                'username' => "Terlalu banyak percobaan masuk. Coba lagi dalam {$menit} menit.",
+            ]);
+        }
+
+        if (! Auth::attempt(['username' => $data['username'], 'password' => $data['password']], $request->boolean('remember'))) {
+            RateLimiter::hit($key, 300);
+
+            throw ValidationException::withMessages([
+                'username' => 'Username atau kata sandi salah.',
+            ]);
+        }
+
+        RateLimiter::clear($key);
+        $request->session()->regenerate();
+
+        return redirect()->intended(route($this->home($request->user()->role)));
     }
 
     public function logout(Request $request)
     {
-        $request->session()->flush();
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
         return redirect()->route('home');
     }
 
-    private function enter(Request $request, string $role)
+    private function home(string $role): string
     {
-        $request->session()->regenerate();
-        $request->session()->put('role', $role);
-
-        return redirect()->route($role === 'admin' ? 'admin.dashboard' : 'petugas.peta');
+        return $role === 'admin' ? 'admin.dashboard' : 'petugas.peta';
     }
 }

@@ -48,6 +48,9 @@
 @yield('modals')
 <div id="toast-root"></div>
 <script src="{{ asset('js/app.js') }}"></script>
+@if(session('success') || session('error'))
+<script>@if(session('success')) toast(@json(session('success'))); @endif @if(session('error')) toast(@json(session('error')), true); @endif</script>
+@endif
 @stack('scripts')
 </body>
 </html>

@@ -43,7 +43,7 @@
                 </div>
                 <div class="field">
                     <label for="f-kec">Kecamatan</label>
-                    <select id="f-kec" class="select">
+                    <select id="f-kec" class="select" autocomplete="off">
                         <option value="">Semua Kecamatan</option>
                         @foreach($kecamatan as $k)
                         <option value="{{ $k['slug'] }}">{{ $k['nama'] }}</option>
@@ -52,7 +52,7 @@
                 </div>
                 <div class="field">
                     <label for="f-kritis">Tingkat Kekritisan</label>
-                    <select id="f-kritis" class="select">
+                    <select id="f-kritis" class="select" autocomplete="off">
                         <option value="">Semua Tingkat</option>
                         @foreach($kritis_opts as $o)
                         <option value="{{ $o['v'] }}">{{ $o['l'] }}</option>
@@ -61,7 +61,7 @@
                 </div>
                 <div class="field">
                     <label for="f-status">Status Kegiatan</label>
-                    <select id="f-status" class="select">
+                    <select id="f-status" class="select" autocomplete="off">
                         <option value="">Semua Status</option>
                         @foreach($status_opts as $s)
                         <option value="{{ $s }}">{{ $s }}</option>
@@ -72,22 +72,18 @@
             </div>
 
             <div class="legend">
-                <span><i style="background:#ef4444"></i>Sangat Kritis</span>
-                <span><i style="background:#f97316"></i>Kritis</span>
-                <span><i style="background:#eab308"></i>Agak Kritis</span>
-                <span><i style="background:#10b981"></i>Potensial Kritis</span>
                 <span class="count" id="result-count"></span>
             </div>
 
             <div class="map-grid">
-                <div class="map-box"><div id="map" data-mode="public" data-geojson="{{ asset('data/kecamatan.geojson') }}"></div></div>
+                <div class="map-box"><div id="map" data-mode="public" data-geojson="{{ route('lahan.geojson') }}"></div></div>
                 <div class="info-col">
                     <div class="info-card">
-                        <h3 id="kec-nama">Selebar</h3>
-                        <div class="eyebrow" id="kec-sub">KECAMATAN · SELEBAR</div>
+                        <h3 id="kec-nama">Belum ada yang dipilih</h3>
+                        <div class="eyebrow" id="kec-sub">KECAMATAN</div>
                         <p class="desc" id="kec-desc">Pilih polygon pada peta untuk melihat detail.</p>
                         <div class="kv-list">
-                            <div class="kv"><span>Tingkat Kekritisan:</span><span class="badge b-sangat" id="kec-badge">Sangat Kritis</span></div>
+                            <div class="kv"><span>Tingkat Kekritisan:</span><span class="badge" id="kec-badge">-</span></div>
                             <div class="kv"><span>Luas Lahan Kritis:</span><b class="mono" id="kec-luas">-</b></div>
                             <div class="kv"><span>Instansi Pembina:</span><b id="kec-bpdas">-</b></div>
                             <div class="kv"><span>Program Publik:</span><b class="mono" id="kec-jml">-</b></div>
