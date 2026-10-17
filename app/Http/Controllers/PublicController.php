@@ -13,10 +13,11 @@ class PublicController extends Controller
     {
         // Halaman publik HANYA menampilkan kegiatan yang ditandai "dipublikasikan".
         $publik = Catalog::kegiatan(publishedOnly: true, forPublic: true);
-        $kecamatan = Catalog::kecamatan();
+        $kecamatan = Catalog::kecamatanSemua();          // filter: semua kecamatan
+        $jmlKecData = Catalog::kecamatan()->count();      // kecamatan yang memiliki data
 
         $kritisHa = DataLahan::whereIn('kritis', $this->labelKritis())->sum('luas_ha');
-        $jmlKec = $kecamatan->count(); // kecamatan yang memiliki data lahan
+        $jmlKec = $jmlKecData;
         $target = $publik->sum('target');
         $real = $publik->sum('realisasi');
         $persen = $target > 0 ? round($real / $target * 100, 1) : 0;
@@ -31,7 +32,7 @@ class PublicController extends Controller
             ]],
             'kecamatan'   => $kecamatan,
             'publik'      => $publik,
-            'kritis_opts' => Catalog::kritisOpts(),
+            'kritis_opts' => Catalog::kritisAda(),
             'status_opts' => config('lahan.status'),
             'app'         => Catalog::app($kecamatan, $publik),
         ]);

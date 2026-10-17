@@ -13,6 +13,7 @@
   const $ = (id) => document.getElementById(id);
   const norm = (s) => (s || '').toLowerCase();
   const nk = (s) => norm(s).replace('singaran', 'singgaran'); /* ejaan "Singaran/Singgaran Pati" disamakan */
+  const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fmt = (x) => Number(x).toLocaleString('id-ID', { maximumFractionDigits: 2 });
   const FILTER_IDS = ['f-q', 'f-kec', 'f-kritis', 'f-status'];
 
@@ -37,7 +38,13 @@
     return k ? k.nama : fallback;
   }
   function kecId(slug) { const k = (APP.kecamatan || []).find((x) => x.slug === slug); return k ? k.id : ''; }
-  function kegOf(nama) { return (APP.kegiatan || []).filter((k) => nk(k.kecamatan) === nk(nama)); }
+  /* kegiatan menempel pada SATU petak (id_lahan); jangan dicocokkan lewat nama kecamatan */
+  function kegPetak(id) { return (APP.kegiatan || []).filter((k) => Number(k.id_lahan) === Number(id)); }
+  /* ringkasan kecamatan: kegiatan yang petaknya berada di kecamatan tsb. */
+  function kegKec(slug) { return (APP.kegiatan || []).filter((k) => k.kec_slug === slug); }
+  function kegItem(k, showPetak) {
+    return '<div class="mini-item"><span>' + esc(k.nama) + (showPetak ? ' <small class="muted">· Petak #' + esc(k.id_lahan) + '</small>' : '') + '</span><span class="badge b-' + esc(k.status_class) + '">' + esc(k.status) + '</span></div>';
+  }
   function baseStyle(f, on) {
     const c = COL[f.properties.kritis_class] || '#94a3b8';
     return on
@@ -64,9 +71,10 @@
     const b = $('kec-badge'); b.textContent = o.badge; b.className = 'badge' + (o.cls ? ' b-' + o.cls : '');
     $('kec-luas').textContent = o.luas;
     $('kec-bpdas').textContent = o.bpdas;
-    const kg = kegOf(o.kecNama);
+    const kg = o.kg || [];
     $('kec-jml').textContent = kg.length + ' Kegiatan';
-    $('kec-kegiatan').innerHTML = kg.length ? kg.map((k) => '<div class="mini-item"><span>' + k.nama + '</span><span class="badge b-' + k.status_class + '">' + k.status + '</span></div>').join('') : '<div class="empty">Belum ada kegiatan rehabilitasi pada kecamatan ini.</div>';
+    const ttl = $('kec-kegiatan-title'); if (ttl && o.kgTitle) ttl.textContent = o.kgTitle;
+    $('kec-kegiatan').innerHTML = kg.length ? kg.map((k) => kegItem(k, o.showPetak)).join('') : '<div class="empty">' + esc(o.kgEmpty || 'Belum ada kegiatan rehabilitasi.') + '</div>';
     const add = $('btn-add-here'); if (add) add.dataset.fill = JSON.stringify(o.fill || {});
     document.querySelectorAll('.result-item').forEach((r) => r.classList.toggle('on', !!o.slug && r.dataset.slug === o.slug));
   }
@@ -80,6 +88,7 @@
       sub: 'KECAMATAN · ' + kn.toUpperCase() + ' · PETAK #' + p.id_lahan,
       desc: 'Petak lahan seluas <b>' + fmt(p.luas) + ' Ha</b> dengan tingkat kekritisan <b>' + p.kritis.toLowerCase() + '</b>.',
       badge: p.kritis, cls: p.kritis_class, luas: fmt(p.luas) + ' Ha', bpdas: 'BPDAS ' + p.bpdas,
+      kg: kegPetak(p.id_lahan), kgTitle: 'Kegiatan Rehabilitasi pada Petak Ini', kgEmpty: 'Belum ada kegiatan rehabilitasi yang terdaftar pada petak ini.',
       fill: { kecamatan_id: kecId(p.kec_slug), id_lahan: p.id_lahan }
     });
   }
@@ -98,6 +107,7 @@
       sub: 'KECAMATAN · ' + kn.toUpperCase(),
       desc: 'Terdapat <b>' + all.length + ' petak</b> lahan seluas <b>' + fmt(ha) + ' Ha</b>: ' + rinci + '.',
       badge: '-', cls: '', luas: fmt(ha) + ' Ha', bpdas: 'BPDAS ' + p0.bpdas,
+      kg: kegKec(slug), showPetak: true, kgTitle: 'Kegiatan pada Petak-petak di Kecamatan Ini', kgEmpty: 'Belum ada kegiatan rehabilitasi pada petak mana pun di kecamatan ini.',
       fill: { kecamatan_id: kecId(slug) }
     });
   }
@@ -113,6 +123,7 @@
     $('kec-bpdas').textContent = '-';
     $('kec-jml').textContent = '-';
     $('kec-kegiatan').innerHTML = '';
+    const ttl = $('kec-kegiatan-title'); if (ttl) ttl.textContent = 'Kegiatan Rehabilitasi';
     const add = $('btn-add-here'); if (add) delete add.dataset.fill;
     document.querySelectorAll('.result-item').forEach((r) => r.classList.remove('on'));
   }
@@ -120,7 +131,7 @@
   /* ---------- filter & pencarian ---------- */
   function matches(p) {
     const q = norm($('f-q') && $('f-q').value).trim(), kec = $('f-kec') && $('f-kec').value, kr = $('f-kritis') && $('f-kritis').value, st = $('f-status') && $('f-status').value;
-    const kn = kecName(p.kec_slug, p.kecamatan), kg = kegOf(kn);
+    const kn = kecName(p.kec_slug, p.kecamatan), kg = kegPetak(p.id_lahan);
     const okQ = !q || norm(kn).includes(q) || norm(p.kritis).includes(q) || kg.some((k) => norm(k.nama + ' ' + k.jenis + ' ' + k.pj).includes(q));
     return okQ && (!kec || kec === p.kec_slug) && (!kr || kr === p.kritis_class) && (!st || kg.some((k) => k.status === st));
   }
@@ -140,17 +151,20 @@
     const active = hasFilter();
     const rc = $('result-count'); if (rc) rc.innerHTML = active ? '<b>' + ok.length + '</b> dari ' + Object.keys(layers).length + ' petak lahan ditemukan' : '';
     const rl = $('result-list');
+    const kv = $('f-kec') && $('f-kec').value;
+    const noData = !!kv && !Object.values(layers).some((l) => l.feature.properties.kec_slug === kv);
     if (rl) {
       /* default: daftar hasil kosong sampai pengguna mencari atau memilih filter */
       const slugs = Object.keys(groups).sort((a, b) => groups[a].nama.localeCompare(groups[b].nama));
       rl.innerHTML = !active ? '' : slugs.length
-        ? slugs.map((s) => '<button type="button" class="result-item' + (selKec === s ? ' on' : '') + '" data-slug="' + s + '"><span><b>' + groups[s].nama + '</b> <small>' + groups[s].n + ' petak · ' + fmt(groups[s].ha) + ' Ha</small></span></button>').join('')
-        : '<div class="empty">Tidak ada lahan yang cocok. Ubah kata kunci atau filter.</div>';
+        ? slugs.map((s) => '<button type="button" class="result-item' + (selKec === s ? ' on' : '') + '" data-slug="' + esc(s) + '"><span><b>' + esc(groups[s].nama) + '</b> <small>' + groups[s].n + ' petak · ' + fmt(groups[s].ha) + ' Ha</small></span></button>').join('')
+        : '<div class="empty">' + (noData ? 'Belum ada data lahan pada kecamatan ini.' : 'Tidak ada lahan yang cocok. Ubah kata kunci atau filter.') + '</div>';
     }
     const st = $('f-status') && $('f-status').value, q = norm($('f-q') && $('f-q').value).trim();
     let cs = 0;
     document.querySelectorAll('.k-card').forEach((c) => {
-      const show = !!groups[c.dataset.kec] && (!st || c.dataset.status === st) && (!q || c.dataset.q.includes(q) || norm(c.dataset.kecname).includes(q));
+      const lyr = layers[c.dataset.lahan];   /* kartu hanya tampil bila petaknya lolos filter */
+      const show = !!lyr && lyr.feature._ok !== false && (!st || c.dataset.status === st) && (!q || c.dataset.q.includes(q) || norm(c.dataset.kecname).includes(q));
       c.style.display = show ? '' : 'none'; if (show) cs++;
     });
     const ke = $('k-empty'); if (ke) ke.style.display = cs ? 'none' : '';
@@ -167,7 +181,8 @@
       onEachFeature: function (f, lyr) {
         layers[f.properties.id_lahan] = lyr;
         present[f.properties.kritis_class] = true;
-        lyr.bindTooltip(kecName(f.properties.kec_slug, f.properties.kecamatan) + ' · ' + f.properties.kritis + ' · ' + fmt(f.properties.luas) + ' Ha', { sticky: true, className: 'kec-label' });
+        const nk_ = kegPetak(f.properties.id_lahan).length;
+        lyr.bindTooltip(esc(kecName(f.properties.kec_slug, f.properties.kecamatan)) + ' · Petak #' + f.properties.id_lahan + ' · ' + esc(f.properties.kritis) + ' · ' + fmt(f.properties.luas) + ' Ha' + (nk_ ? ' · ' + nk_ + ' kegiatan' : ''), { sticky: true, className: 'kec-label' });
         lyr.on({
           click: () => selectLayer(lyr),
           mouseover: () => { if (selLayer !== lyr && f._ok !== false) lyr.setStyle({ fillOpacity: FILL_HOVER }); },
@@ -182,7 +197,7 @@
     const legend = L.control({ position: 'bottomright' });
     legend.onAdd = function () {
       const d = L.DomUtil.create('div', 'map-legend-ctl');
-      d.innerHTML = ORDER.filter((c) => present[c]).map((c) => '<div><i style="background:' + COL[c] + '"></i>' + LABEL[c] + '</div>').join('');
+      d.innerHTML = ORDER.filter((c) => present[c]).map((c) => '<div><i style="background:' + esc(COL[c]) + '"></i>' + esc(LABEL[c]) + '</div>').join('');
       L.DomEvent.disableClickPropagation(d);
       return d;
     };

@@ -31,8 +31,35 @@ class Catalog
                 'id'   => (int) $r->kecamatan_id,
                 'slug' => config("lahan.kecamatan.{$r->kecamatan_id}.slug", (string) $r->kecamatan_id),
                 'nama' => $r->kecamatan,
+                'ada_data' => true,
             ])
             ->values();
+    }
+
+    /**
+     * Seluruh kecamatan Kota Bengkulu untuk pilihan FILTER, termasuk yang belum punya data lahan
+     * (ditandai ada_data=false). Form input kegiatan tetap memakai kecamatan() karena butuh petak.
+     */
+    public static function kecamatanSemua(): Collection
+    {
+        $ada = DataLahan::query()->distinct()->pluck('kecamatan_id')->map(fn ($v) => (int) $v)->all();
+
+        return collect(config('lahan.kecamatan'))
+            ->map(fn ($k, $id) => ['id' => (int) $id, 'slug' => $k['slug'], 'nama' => $k['nama'], 'ada_data' => in_array((int) $id, $ada, true)])
+            ->sortBy('nama')
+            ->values();
+    }
+
+    /** Kelas kekritisan yang benar-benar ada pada data (untuk pilihan filter & legenda). */
+    public static function kritisAda(): array
+    {
+        $ada = DataLahan::query()->distinct()->pluck('kritis')->all();
+
+        return collect(config('lahan.kritis'))
+            ->filter(fn ($label) => in_array($label, $ada, true))
+            ->map(fn ($label, $v) => ['v' => $v, 'l' => $label])
+            ->values()
+            ->all();
     }
 
     public static function kritisOpts(): array

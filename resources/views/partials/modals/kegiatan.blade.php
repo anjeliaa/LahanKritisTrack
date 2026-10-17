@@ -9,7 +9,7 @@
         <div class="field"><label>Nama Kegiatan</label><input class="input" name="nama_kegiatan" placeholder="mis. Penanaman Vegetasi DAS" required maxlength="255"></div>
         <div class="field"><label>Area Lahan Kritis (Kecamatan)</label>
             <select class="select" name="kecamatan_id" data-cascade="id_lahan" required>
-                @foreach($kecamatan as $c)
+                @foreach($kecamatan_data as $c)
                 <option value="{{ $c['id'] }}">{{ $c['nama'] }}</option>
                 @endforeach
             </select>

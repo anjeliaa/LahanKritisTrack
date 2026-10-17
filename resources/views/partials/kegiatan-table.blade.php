@@ -7,7 +7,7 @@
         <div class="search"><svg class="ic"><use href="#i-search"/></svg><input class="input tf-q" type="search" placeholder="Cari kegiatan..."></div>
         <select class="select tool-select tf-kec"><option value="">Semua Kecamatan</option>
             @foreach($kecamatan as $c)
-                    <option value="{{ $c['nama'] }}">{{ $c['nama'] }}</option>
+                    <option value="{{ $c['nama'] }}">{{ $c['nama'] }}@unless($c['ada_data']) (belum ada data)@endunless</option>
                     @endforeach
         </select>
         <select class="select tool-select tf-status"><option value="">Semua Status</option>

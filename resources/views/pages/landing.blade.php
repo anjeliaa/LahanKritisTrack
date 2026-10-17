@@ -36,44 +36,7 @@
         </div>
 
         <div class="card map-card">
-            <div class="filters">
-                <div class="field">
-                    <label for="f-q">Pencarian</label>
-                    <div class="search"><svg class="ic"><use href="#i-search"/></svg><input id="f-q" class="input" type="search" placeholder="Cari kecamatan atau nama kegiatan..." autocomplete="off"></div>
-                </div>
-                <div class="field">
-                    <label for="f-kec">Kecamatan</label>
-                    <select id="f-kec" class="select" autocomplete="off">
-                        <option value="">Semua Kecamatan</option>
-                        @foreach($kecamatan as $k)
-                        <option value="{{ $k['slug'] }}">{{ $k['nama'] }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="field">
-                    <label for="f-kritis">Tingkat Kekritisan</label>
-                    <select id="f-kritis" class="select" autocomplete="off">
-                        <option value="">Semua Tingkat</option>
-                        @foreach($kritis_opts as $o)
-                        <option value="{{ $o['v'] }}">{{ $o['l'] }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="field">
-                    <label for="f-status">Status Kegiatan</label>
-                    <select id="f-status" class="select" autocomplete="off">
-                        <option value="">Semua Status</option>
-                        @foreach($status_opts as $s)
-                        <option value="{{ $s }}">{{ $s }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <button type="button" id="f-reset" class="btn btn-outline" style="height:41px"><svg class="ic"><use href="#i-refresh"/></svg> Reset</button>
-            </div>
-
-            <div class="legend">
-                <span class="count" id="result-count"></span>
-            </div>
+            @include('partials.map-filter', ['kritisFilter' => $kritis_opts])
 
             <div class="map-grid">
                 <div class="map-box"><div id="map" data-mode="public" data-geojson="{{ route('lahan.geojson') }}"></div></div>
@@ -90,13 +53,10 @@
                         </div>
                     </div>
                     <div class="info-card" style="padding:16px">
-                        <h3 style="font-size:12px">Kegiatan Rehabilitasi Terbuka</h3>
+                        <h3 style="font-size:12px" id="kec-kegiatan-title">Kegiatan Rehabilitasi Terbuka</h3>
                         <div class="mini-list" id="kec-kegiatan"></div>
                     </div>
-                    <div>
-                        <h3 style="font-size:12px;font-weight:700;color:var(--text2)">Daftar hasil pencarian</h3>
-                        <div class="result-list" id="result-list"></div>
-                    </div>
+                    @include('partials.map-result-list')
                 </div>
             </div>
         </div>
@@ -114,9 +74,9 @@
         </div>
         <div class="k-grid">
             @foreach($publik as $k)
-            <article class="card k-card" data-kec="{{ $k['kec_slug'] }}" data-kecname="{{ $k['kecamatan'] }}" data-status="{{ $k['status'] }}" data-q="{{ $k['q'] }}">
+            <article class="card k-card" data-lahan="{{ $k['id_lahan'] }}" data-kec="{{ $k['kec_slug'] }}" data-kecname="{{ $k['kecamatan'] }}" data-status="{{ $k['status'] }}" data-q="{{ $k['q'] }}">
                 <div class="top">
-                    <span class="chip">{{ $k['kecamatan'] }} · {{ $k['jenis'] }}</span>
+                    <span class="chip">{{ $k['kecamatan'] }} · Petak #{{ $k['id_lahan'] }} · {{ $k['jenis'] }}</span>
                     <span class="badge b-{{ $k['status_class'] }}">{{ $k['status'] }}</span>
                 </div>
                 <h3>{{ $k['nama'] }}</h3>

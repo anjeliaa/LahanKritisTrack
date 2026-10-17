@@ -19,7 +19,7 @@ class PetugasController extends InternalController
         return $this->render('petugas.peta', 'peta', 'petugas.peta', [
             Ui::tile('Petak Lahan', DataLahan::count(), 'Terdata', 'white'),
             Ui::tile('Total Luas', Fmt::ha(DataLahan::sum('luas_ha')), 'Hektare', 'amber'),
-            Ui::tile('Kritis', $kritisTinggi, 'Petak (kritis & sangat kritis)', 'red'),
+            Ui::tile('Kritis', $kritisTinggi, 'Petak Lahan (kritis)', 'red'),
         ], ['kegiatan' => $kegiatan]);
     }
 

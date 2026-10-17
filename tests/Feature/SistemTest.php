@@ -306,9 +306,88 @@ it('donut dashboard memakai warna peta, hanya kelas yang ada, dan jumlah kecamat
         ->and($app['dashboard']['donut']['colors'])->toBe(['#22c55e', '#eab308', '#f97316', '#ef4444'])
         ->and($app['warna']['kritis'])->toBe('#ef4444');
 
-    // 7 kecamatan memiliki data -> angka yang sama di dashboard dan halaman publik
-    expect($app['kecamatan'])->toHaveCount(7);
+    // APP memuat 9 kecamatan (untuk filter); 7 di antaranya memiliki data -> angka seragam di dashboard & publik
+    expect($app['kecamatan'])->toHaveCount(9)
+        ->and(collect($app['kecamatan'])->where('ada_data', true))->toHaveCount(7);
     $this->actingAs($admin)->get('/admin/dashboard')->assertSee('Berdasarkan data 7 Kecamatan');
     auth()->logout();
     $this->get('/')->assertSee('Berdasarkan data 7 Kecamatan');
+});
+
+
+it('filter peta menampilkan semua kecamatan, tetapi tingkat kekritisan hanya yang ada pada data', function () {
+    $this->seed(DatabaseSeeder::class);
+
+    $html = $this->get('/')->assertOk()->getContent();
+
+    // 9 kecamatan, termasuk Ratu Samban & Teluk Segara yang belum punya data
+    foreach (config('lahan.kecamatan') as $k) {
+        expect($html)->toContain($k['nama']);
+    }
+    expect($html)->toContain('Teluk Segara (belum ada data)')->and($html)->toContain('Ratu Samban (belum ada data)')
+        ->and($html)->not->toContain('Selebar (belum ada data)');
+
+    // kelas pada data: Tidak, Potensial, Agak, Kritis  -> "Sangat Kritis" tidak jadi opsi
+    preg_match('/<select id="f-kritis".*?<\/select>/s', $html, $m);
+    expect($m[0])->toContain('Potensial Kritis')->toContain('Agak Kritis')->toContain('Tidak Kritis')
+        ->and($m[0])->not->toContain('Sangat Kritis');
+
+    // halaman petugas: filter kecamatan tersedia dan sama aturannya
+    $petugas = User::where('role', 'petugas')->first();
+    $peta = $this->actingAs($petugas)->get('/petugas/peta')->assertOk()->getContent();
+    expect($peta)->toContain('id="f-kec"')->toContain('Teluk Segara (belum ada data)');
+    preg_match('/<select id="f-kritis".*?<\/select>/s', $peta, $m2);
+    expect($m2[0])->not->toContain('Sangat Kritis');
+});
+
+it('opsi Sangat Kritis muncul otomatis begitu ada petaknya', function () {
+    $this->seed(DatabaseSeeder::class);
+    DataLahan::first()->update(['kritis' => 'Sangat Kritis']);
+
+    $this->get('/')->assertSee('Sangat Kritis');
+});
+
+it('kegiatan terhubung ke petak (id_lahan), bukan ke kecamatan', function () {
+    $a = petak(['kecamatan_id' => 1, 'kecamatan' => 'Selebar']);
+    $b = petak(['kecamatan_id' => 1, 'kecamatan' => 'Selebar']);   // kecamatan sama, petak berbeda
+    keg($a, ['nama_kegiatan' => 'Hanya di Petak A']);
+
+    $html = $this->get('/')->getContent();
+    preg_match('/window\.APP = (\{.*?\});<\/script>/s', $html, $m);
+    $kg = json_decode($m[1], true)['kegiatan'];
+
+    expect($kg)->toHaveCount(1)
+        ->and($kg[0]['id_lahan'])->toBe($a->id_lahan)
+        ->and($kg[0]['kec_slug'])->toBe('selebar');
+    // kartu publik menempel pada petak A saja
+    expect($html)->toContain('data-lahan="'.$a->id_lahan.'"')->not->toContain('data-lahan="'.$b->id_lahan.'"');
+});
+
+it('halaman publik memuat widget chatbot, halaman internal tidak', function () {
+    $this->get('/')->assertOk()->assertSee('id="chatbot"', false)->assertSee('js/chatbot.js', false)->assertSee('Asisten LahanKritis');
+
+    $this->actingAs(User::factory()->admin()->create())->get('/admin/dashboard')->assertOk()->assertDontSee('id="chatbot"', false);
+});
+
+it('navbar publik tidak lagi memuat menu Statistik Wilayah', function () {
+    $this->get('/')->assertOk()->assertDontSee('Statistik Wilayah')
+        ->assertSee('Peta Lahan Kritis')->assertSee('Kegiatan Rehabilitasi');
+});
+
+it('filter peta petugas identik dengan filter peta masyarakat', function () {
+    $this->seed(DatabaseSeeder::class);
+    $ids = ['f-q', 'f-kec', 'f-kritis', 'f-status', 'f-reset', 'result-count', 'result-list'];
+
+    $publik = $this->get('/')->getContent();
+    $petugas = $this->actingAs(User::where('role', 'petugas')->first())->get('/petugas/peta')->assertOk()->getContent();
+
+    $blok = fn ($h) => preg_replace('/\s+/', ' ', preg_match('/<div class="filters">.*?id="result-count"><\/span>\s*<\/div>/s', $h, $m) ? $m[0] : '');
+    foreach ($ids as $id) {
+        expect($publik)->toContain('id="'.$id.'"');
+        expect($petugas)->toContain('id="'.$id.'"');
+    }
+    // markup blok filter sama persis (opsi kecamatan, kekritisan, status)
+    expect($blok($petugas))->not->toBe('')->toBe($blok($publik));
+    // petugas juga mendapat opsi status & kecamatan tanpa data, dan tanpa Sangat Kritis
+    expect($petugas)->toContain('Semua Status')->toContain('Teluk Segara (belum ada data)')->not->toContain('value="sangat"');
 });

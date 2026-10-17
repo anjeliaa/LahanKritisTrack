@@ -19,7 +19,8 @@ abstract class InternalController extends Controller
     {
         /** @var Collection $kegiatan */
         $kegiatan = $data['kegiatan'] ?? Catalog::kegiatan();
-        $kecamatan = Catalog::kecamatan();
+        $kecamatan = Catalog::kecamatanSemua();   // pilihan filter: semua kecamatan
+        $kecamatanData = Catalog::kecamatan();    // form kegiatan: hanya kecamatan yang punya petak
 
         $app = Catalog::app($kecamatan, $kegiatan, $data['app_extra'] ?? []);
         unset($data['app_extra']);
@@ -30,11 +31,13 @@ abstract class InternalController extends Controller
             'active'      => $active,
             'ph'          => Ui::header($headerKey, $stats),
             'kecamatan'   => $kecamatan,
+            'kecamatan_data' => $kecamatanData,
             'kegiatan'    => $kegiatan,
             'petak'       => Catalog::petak(),
             'status_opts' => config('lahan.status'),
             'kondisi_opts' => config('lahan.kondisi'),
-            'kritis_opts' => Catalog::kritisOpts(),
+            'kritis_opts' => Catalog::kritisOpts(),   // form ubah petak: semua kelas
+            'kritis_ada'  => Catalog::kritisAda(),    // filter: hanya kelas yang ada pada data
             'app'         => $app,
         ], $data));
     }

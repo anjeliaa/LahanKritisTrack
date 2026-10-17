@@ -13,7 +13,7 @@
     <div class="toolbar">
         <select class="select tool-select" name="kecamatan_id" onchange="this.form.submit()"><option value="">Semua Kecamatan</option>
             @foreach($kecamatan as $c)
-            <option value="{{ $c['id'] }}" @selected((string) $filter['kecamatan_id'] === (string) $c['id'])>{{ $c['nama'] }}</option>
+            <option value="{{ $c['id'] }}" @selected((string) $filter['kecamatan_id'] === (string) $c['id'])>{{ $c['nama'] }}@unless($c['ada_data']) (belum ada data)@endunless</option>
             @endforeach
         </select>
         <select class="select tool-select" name="periode" onchange="this.form.submit()"><option value="">Semua Periode</option>

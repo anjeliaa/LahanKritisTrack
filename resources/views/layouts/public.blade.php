@@ -23,7 +23,6 @@
             <a class="nav-l" href="#top">Beranda</a>
             <a class="nav-l" href="#peta">Peta Lahan Kritis</a>
             <a class="nav-l" href="#kegiatan">Kegiatan Rehabilitasi</a>
-            <a class="nav-l" href="#statistik">Statistik Wilayah</a>
             <button type="button" class="icon-btn" data-theme-toggle aria-label="Ganti tema"><svg class="ic"><use href="#i-moon"/></svg></button>
             <a href="{{ route('login') }}" class="btn btn-gradient"><svg class="ic"><use href="#i-login"/></svg> Masuk Sistem</a>
         </nav>
@@ -39,8 +38,11 @@
     </div>
 </footer>
 
+@include('partials.chatbot')
+
 <div id="toast-root"></div>
 <script src="{{ asset('js/app.js') }}"></script>
+<script src="{{ asset('js/chatbot.js') }}"></script>
 @if(session('success') || session('error'))
 <script>@if(session('success')) toast(@json(session('success'))); @endif @if(session('error')) toast(@json(session('error')), true); @endif</script>
 @endif

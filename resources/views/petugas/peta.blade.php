@@ -3,16 +3,8 @@
 
 @section('content')
 <div class="card map-card">
-    <div class="toolbar" style="padding:0 0 12px;border-bottom:1px solid var(--line2);justify-content:space-between">
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <div class="search"><svg class="ic"><use href="#i-search"/></svg><input id="f-q" class="input" type="search" placeholder="Cari kecamatan..." autocomplete="off"></div>
-            <select id="f-kritis" class="select tool-select" autocomplete="off"><option value="">Semua Kekritisan</option>
-                @foreach($kritis_opts as $o)
-                <option value="{{ $o['v'] }}">{{ $o['l'] }}</option>
-                @endforeach
-            </select>
-        </div>
-    </div>
+    @include('partials.map-filter', ['kritisFilter' => $kritis_ada])
+
     <div class="map-grid">
         <div class="map-box"><div id="map" data-mode="petugas" data-geojson="{{ route('lahan.geojson') }}"></div></div>
         <div class="info-col">
@@ -28,10 +20,11 @@
                 </div>
             </div>
             <div class="info-card" style="padding:16px">
-                <h3 style="font-size:12px">Kegiatan Rehabilitasi di Kecamatan Ini</h3>
+                <h3 style="font-size:12px" id="kec-kegiatan-title">Kegiatan Rehabilitasi</h3>
                 <div class="mini-list" id="kec-kegiatan"></div>
             </div>
             <button type="button" id="btn-add-here" class="btn btn-primary btn-block" style="padding:12px" data-open="modal-kegiatan" data-title="Tambah Kegiatan Rehabilitasi Baru" data-tone="green" data-action="{{ route('kegiatan.store') }}" data-method="POST"><svg class="ic"><use href="#i-plus"/></svg> Tambah kegiatan di sini</button>
+            @include('partials.map-result-list')
         </div>
     </div>
 </div>
