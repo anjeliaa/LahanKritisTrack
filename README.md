@@ -18,8 +18,9 @@ Data awal (seeder): 3 akun dan **80 petak lahan kritis** dari GeoJSON BPDAS Keta
 | Username | Role |
 |---|---|
 | `anjelia.admin` | Admin |
-| `fikhri.petugas` | Petugas |
-| `habiby.petugas` | Petugas |
+| `fikhri.admin` | Admin |
+| `habiby.admin` | Admin |
+| `budi.petugas` | Petugas |
 
 
 ### MySQL / MariaDB (XAMPP, Laragon)
