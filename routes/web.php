@@ -1,3 +1,4 @@
+
 <?php
 
 use App\Http\Controllers\AdminController;
@@ -22,34 +23,52 @@ Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // ---------- Admin ----------
-Route::middleware(EnsureRole::class.':admin')->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
-    Route::get('/kegiatan', [AdminController::class, 'kegiatan'])->name('kegiatan');
-    Route::get('/monitoring', [AdminController::class, 'monitoring'])->name('monitoring');
+Route::middleware(EnsureRole::class . ':admin')
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
 
-    Route::get('/akun', [AdminController::class, 'akun'])->name('akun');
-    Route::post('/akun', [AkunController::class, 'store'])->name('akun.store');
-    Route::put('/akun/{user}', [AkunController::class, 'update'])->name('akun.update');
-    Route::delete('/akun/{user}', [AkunController::class, 'destroy'])->name('akun.destroy');
+        Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+        Route::get('/kegiatan', [AdminController::class, 'kegiatan'])->name('kegiatan');
+        Route::get('/monitoring', [AdminController::class, 'monitoring'])->name('monitoring');
 
-    Route::get('/lahan', [AdminController::class, 'lahan'])->name('lahan');
-    Route::post('/lahan/import', [LahanController::class, 'import'])->name('lahan.import');
-    Route::put('/lahan/{lahan}', [LahanController::class, 'update'])->name('lahan.update');
-    Route::delete('/lahan/{lahan}', [LahanController::class, 'destroy'])->name('lahan.destroy');
+        // ---------- Akun ----------
+        Route::get('/akun', [AdminController::class, 'akun'])->name('akun');
+        Route::post('/akun', [AkunController::class, 'store'])->name('akun.store');
+        Route::put('/akun/{user}', [AkunController::class, 'update'])->name('akun.update');
+        Route::delete('/akun/{user}', [AkunController::class, 'destroy'])->name('akun.destroy');
 
-    Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
-    Route::get('/laporan/excel', [LaporanController::class, 'excel'])->name('laporan.excel');
-});
+        // ---------- Data Lahan ----------
+        Route::get('/lahan', [AdminController::class, 'lahan'])->name('lahan');
+        Route::post('/lahan/import', [LahanController::class, 'import'])->name('lahan.import');
+        Route::put('/lahan/{lahan}', [LahanController::class, 'update'])->name('lahan.update');
+        Route::delete('/lahan/{lahan}', [LahanController::class, 'destroy'])->name('lahan.destroy');
+
+        // ---------- Laporan Kegiatan dan Monitoring ----------
+        Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
+        Route::get('/laporan/excel', [LaporanController::class, 'excel'])->name('laporan.excel');
+        Route::get('/laporan/monitoring/excel', [LaporanController::class, 'excelMonitoring'])
+            ->name('laporan.monitoring.excel');
+    });
 
 // ---------- Petugas ----------
-Route::middleware(EnsureRole::class.':petugas')->prefix('petugas')->name('petugas.')->group(function () {
-    Route::get('/peta', [PetugasController::class, 'peta'])->name('peta');
-    Route::get('/kegiatan', [PetugasController::class, 'kegiatan'])->name('kegiatan');
-    Route::get('/monitoring', [PetugasController::class, 'monitoring'])->name('monitoring');
-});
+Route::middleware(EnsureRole::class . ':petugas')
+    ->prefix('petugas')
+    ->name('petugas.')
+    ->group(function () {
+
+        Route::get('/peta', [PetugasController::class, 'peta'])->name('peta');
+        Route::get('/kegiatan', [PetugasController::class, 'kegiatan'])->name('kegiatan');
+        Route::get('/monitoring', [PetugasController::class, 'monitoring'])->name('monitoring');
+
+        // ---------- Profil Petugas ----------
+        Route::get('/profil', [PetugasController::class, 'profil'])->name('profil');
+        Route::put('/profil', [PetugasController::class, 'updateProfil'])->name('profil.update');
+    });
 
 // ---------- Aksi data bersama (Admin & Petugas) ----------
-Route::middleware(EnsureRole::class.':admin,petugas')->group(function () {
+Route::middleware(EnsureRole::class . ':admin,petugas')->group(function () {
+
     Route::post('/kegiatan', [KegiatanController::class, 'store'])->name('kegiatan.store');
     Route::post('/kegiatan/status', [KegiatanController::class, 'status'])->name('kegiatan.status');
     Route::put('/kegiatan/{kegiatan}', [KegiatanController::class, 'update'])->name('kegiatan.update');
@@ -59,7 +78,8 @@ Route::middleware(EnsureRole::class.':admin,petugas')->group(function () {
 });
 
 // ---------- Hapus data: khusus Admin ----------
-Route::middleware(EnsureRole::class.':admin')->group(function () {
+Route::middleware(EnsureRole::class . ':admin')->group(function () {
+
     Route::delete('/kegiatan/{kegiatan}', [KegiatanController::class, 'destroy'])->name('kegiatan.destroy');
     Route::delete('/monitoring/{monitoring}', [MonitoringController::class, 'destroy'])->name('monitoring.destroy');
 });
