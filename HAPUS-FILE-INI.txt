@@ -1,9 +1,0 @@
-Hapus file/folder berikut dari proyek (sisa/duplikat yang sudah tidak dipakai):
-
-app/Support/DummyData.php                    (sisa data dummy; tidak dipakai lagi)
-public/data/                                 (GeoJSON statis lama; peta kini membaca dari database)
-resources/views/petugas/profil.blade.php     (digantikan resources/views/pages/profil.blade.php)
-tests/Feature/ExampleTest.php                (tes bawaan Laravel; selalu gagal)
-lahankritistrack                             (berkas di root proyek; ternyata file database SQLite yang ikut ter-commit)
-
-Setelah menimpa file:  php artisan optimize:clear
