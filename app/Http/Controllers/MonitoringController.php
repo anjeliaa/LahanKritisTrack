@@ -2,21 +2,27 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\KegiatanRehabilitasi;
 use App\Models\Monitoring;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class MonitoringController extends Controller
 {
+    /** Hanya Petugas yang mencatat monitoring (route dibatasi role petugas). */
     public function store(Request $request)
     {
         $data = $this->validated($request);
+        $kegiatan = $this->kegiatanBolehDicatat($request, (int) $data['id_kegiatan']);
 
         $data['id_user'] = $request->user()->id_user;
         $data['tanggal_monitoring'] ??= today()->toDateString();
         $data['foto_dokumentasi'] = $this->simpanFoto($request);
 
         Monitoring::create($data);
+
+        $kegiatan->selaraskanStatus(); // progres 100% -> Selesai, progres > 0 -> Berjalan
 
         return $this->ok($request, 'Laporan monitoring disimpan.');
     }
@@ -31,6 +37,8 @@ class MonitoringController extends Controller
         );
 
         $data = $this->validated($request);
+        $kegiatanBaru = $this->kegiatanBolehDicatat($request, (int) $data['id_kegiatan']);
+        $idKegiatanLama = $monitoring->id_kegiatan;
 
         // tanggal kosong = pertahankan tanggal lama (kolom wajib terisi)
         if (blank($data['tanggal_monitoring'] ?? null)) {
@@ -48,6 +56,11 @@ class MonitoringController extends Controller
 
         $monitoring->update($data);
 
+        $kegiatanBaru->selaraskanStatus();
+        if ($idKegiatanLama !== $kegiatanBaru->id_kegiatan) {
+            KegiatanRehabilitasi::find($idKegiatanLama)?->selaraskanStatus();
+        }
+
         return $this->ok($request, 'Laporan monitoring diperbarui.');
     }
 
@@ -57,9 +70,26 @@ class MonitoringController extends Controller
             Storage::disk('public')->delete($monitoring->foto_dokumentasi);
         }
 
+        $kegiatan = $monitoring->kegiatan;
         $monitoring->delete();
 
+        $kegiatan?->selaraskanStatus();
+
         return $this->ok($request, 'Data monitoring dihapus.');
+    }
+
+    /** Petugas hanya boleh mencatat monitoring untuk kegiatan yang menjadi tanggung jawabnya. */
+    private function kegiatanBolehDicatat(Request $request, int $id): KegiatanRehabilitasi
+    {
+        $kegiatan = KegiatanRehabilitasi::findOrFail($id);
+
+        if (! $kegiatan->bolehDikelola($request->user())) {
+            throw ValidationException::withMessages([
+                'id_kegiatan' => 'Kegiatan ini bukan tanggung jawab Anda. Pilih kegiatan yang Anda kelola.',
+            ]);
+        }
+
+        return $kegiatan;
     }
 
     private function validated(Request $request): array

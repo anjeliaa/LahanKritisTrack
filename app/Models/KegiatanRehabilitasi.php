@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -81,5 +82,78 @@ class KegiatanRehabilitasi extends Model
     public function getStatusClassAttribute(): string
     {
         return strtolower($this->status);
+    }
+
+    // ------------------------------------------------------------------ kepemilikan
+
+    /** Admin boleh semua; Petugas hanya kegiatan yang ia kelola (relasi "mengelola", kolom id_user). */
+    public function bolehDikelola(?User $user): bool
+    {
+        return $user && ($user->isAdmin() || (int) $this->id_user === (int) $user->id_user);
+    }
+
+    // ------------------------------------------------------------------ aturan status
+
+    /**
+     * Status yang boleh dipilih menurut progres monitoring TERBARU:
+     *  - belum ada progres (0%)  : Rencana / Berjalan (petugas menandai kegiatan dimulai)
+     *  - 1-99%                   : Berjalan
+     *  - 100%                    : Selesai
+     */
+    public function statusDiizinkan(): array
+    {
+        $p = $this->progres;
+
+        return match (true) {
+            $p >= 100 => ['Selesai'],
+            $p > 0    => ['Berjalan'],
+            default   => ['Rencana', 'Berjalan'],
+        };
+    }
+
+    /**
+     * Menerapkan status baru + mencatat tanggal perubahan status (tanggal_status).
+     * Saat menjadi Selesai, tanggal_selesai yang masih kosong diisi otomatis dengan tanggal penyelesaian;
+     * tanggal_selesai yang sudah diisi (target) dipertahankan, sehingga tepat waktu / terlambat dapat dibandingkan
+     * dengan tanggal_status (tanggal penyelesaian sebenarnya).
+     */
+    public function terapkanStatus(string $status, ?CarbonInterface $tanggal = null): void
+    {
+        $tanggal ??= today();
+
+        if ($this->status !== $status) {
+            $this->tanggal_status = $tanggal;
+        }
+
+        $this->status = $status;
+
+        if ($status === 'Selesai' && ! $this->tanggal_selesai) {
+            $this->tanggal_selesai = $tanggal;
+        }
+
+        $this->save();
+    }
+
+    /**
+     * Menyelaraskan status dengan progres monitoring terbaru. Dipanggil setiap monitoring
+     * ditambah / diubah / dihapus:
+     *   100% -> Selesai;  1-99% -> Berjalan;  0% / tanpa monitoring -> tidak diubah (kecuali sebelumnya Selesai).
+     */
+    public function selaraskanStatus(): void
+    {
+        $this->unsetRelation('monitoringTerakhir');
+        $terakhir = $this->monitoringTerakhir;
+        $p = (int) ($terakhir?->progres_persen ?? 0);
+        $tgl = $terakhir?->tanggal_monitoring;
+
+        $target = match (true) {
+            $p >= 100 => 'Selesai',
+            $p > 0    => 'Berjalan',
+            default   => $this->status === 'Selesai' ? 'Berjalan' : null,
+        };
+
+        if ($target !== null && $target !== $this->status) {
+            $this->terapkanStatus($target, $tgl);
+        }
     }
 }

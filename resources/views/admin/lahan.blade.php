@@ -5,7 +5,10 @@
 <div class="card" data-table-filter="tbl-lahan">
     <div class="card-head">
         <h2>Data Petak Lahan Kritis</h2>
-        <button type="button" class="btn btn-primary" data-open="modal-import"><svg class="ic"><use href="#i-upload"/></svg> Impor GeoJSON</button>
+        <div class="acts">
+            <button type="button" class="btn btn-outline" data-open="modal-import"><svg class="ic"><use href="#i-upload"/></svg> Impor GeoJSON</button>
+            <button type="button" class="btn btn-primary" data-open="modal-lahan-tambah"><svg class="ic"><use href="#i-plus"/></svg> Tambah Data</button>
+        </div>
     </div>
     <div class="toolbar">
         <div class="search"><svg class="ic"><use href="#i-search"/></svg><input class="input tf-q" type="search" placeholder="Cari kecamatan / nomor petak..."></div>
@@ -15,7 +18,7 @@
             @endforeach
         </select>
         <select class="select tool-select tf-status"><option value="">Semua Kekritisan</option>
-            @foreach($kritis_ada as $o)
+            @foreach($kritis_data as $o)
             <option value="{{ $o['l'] }}">{{ $o['l'] }}</option>
             @endforeach
         </select>
@@ -29,7 +32,7 @@
                     <td class="mono">#{{ $k['id'] }}</td>
                     <td class="name">{{ $k['kecamatan'] }}</td>
                     <td class="muted">BPDAS {{ $k['bpdas'] }}</td>
-                    <td><span class="badge b-{{ $k['kritis_class'] }}">{{ $k['kritis'] }}</span></td>
+                    <td><span class="badge b-{{ $k['kritis_class'] }}">{{ $k['kritis'] }}</span>@if($k['rehab'])<small class="muted" style="display:block;margin-top:3px"><span class="badge b-pulih">Telah Direhabilitasi</span>@if($k['rehab_tanggal']) {{ $k['rehab_tanggal'] }}@endif</small>@endif</td>
                     <td class="num">{{ $k['luas_fmt'] }} Ha</td>
                     <td><div class="acts">
                         <button type="button" class="act act-detail" data-open="modal-detail" data-detail="{{ $k['detail'] }}"><svg class="ic"><use href="#i-eye"/></svg> Detail</button>
@@ -51,10 +54,13 @@
 @section('modals')
 @include('partials.modals.detail-lahan')
 @include('partials.modals.import')
+@include('partials.modals.lahan-tambah')
 @include('partials.modals.lahan')
 @include('partials.modals.hapus')
 @endsection
 
 @push('scripts')
 <script>window.APP = @json($app);</script>
+<script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
+<script src="{{ asset('js/lahan-form.js') }}"></script>
 @endpush

@@ -116,7 +116,8 @@ class LaporanController extends InternalController
             'Progres (%)',
             'Status',
             'Mulai',
-            'Selesai',
+            'Target Selesai',
+            'Selesai Aktual',
         ]];
 
         foreach ($rows->values() as $i => $r) {
@@ -133,6 +134,7 @@ class LaporanController extends InternalController
                 $r['status'],
                 $r['mulai'],
                 $r['selesai'],
+                $r['selesai_aktual'] ?? '-',
             ];
         }
 
@@ -149,13 +151,14 @@ class LaporanController extends InternalController
             '',
             '',
             '',
+            '',
         ];
 
         return $this->downloadSpreadsheet(
             $out,
             'Rekap Kegiatan',
             'laporan-kegiatan-lahankritistrack',
-            [5, 14, 48, 20, 22, 28, 12, 14, 12, 12, 14, 14]
+            [5, 14, 48, 20, 22, 28, 12, 14, 12, 12, 14, 14, 16]
         );
     }
 

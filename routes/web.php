@@ -1,4 +1,3 @@
-
 <?php
 
 use App\Http\Controllers\AdminController;
@@ -9,6 +8,7 @@ use App\Http\Controllers\LahanController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\PetugasController;
+use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\PublicController;
 use App\Http\Middleware\EnsureRole;
 use Illuminate\Support\Facades\Route;
@@ -40,6 +40,7 @@ Route::middleware(EnsureRole::class . ':admin')
 
         // ---------- Data Lahan ----------
         Route::get('/lahan', [AdminController::class, 'lahan'])->name('lahan');
+        Route::post('/lahan', [LahanController::class, 'store'])->name('lahan.store');
         Route::post('/lahan/import', [LahanController::class, 'import'])->name('lahan.import');
         Route::put('/lahan/{lahan}', [LahanController::class, 'update'])->name('lahan.update');
         Route::delete('/lahan/{lahan}', [LahanController::class, 'destroy'])->name('lahan.destroy');
@@ -60,21 +61,32 @@ Route::middleware(EnsureRole::class . ':petugas')
         Route::get('/peta', [PetugasController::class, 'peta'])->name('peta');
         Route::get('/kegiatan', [PetugasController::class, 'kegiatan'])->name('kegiatan');
         Route::get('/monitoring', [PetugasController::class, 'monitoring'])->name('monitoring');
-
-        // ---------- Profil Petugas ----------
-        Route::get('/profil', [PetugasController::class, 'profil'])->name('profil');
-        Route::put('/profil', [PetugasController::class, 'updateProfil'])->name('profil.update');
     });
 
-// ---------- Aksi data bersama (Admin & Petugas) ----------
+// ---------- Pengaturan akun sendiri (Admin & Petugas) ----------
+Route::middleware(EnsureRole::class . ':admin,petugas')->group(function () {
+
+    Route::get('/profil', [ProfilController::class, 'show'])->name('profil');
+    Route::put('/profil/password', [ProfilController::class, 'ubahPassword'])
+        ->middleware('throttle:6,1')
+        ->name('profil.password');
+});
+
+// ---------- Kegiatan rehabilitasi (Admin & Petugas; Petugas hanya yang ia kelola) ----------
 Route::middleware(EnsureRole::class . ':admin,petugas')->group(function () {
 
     Route::post('/kegiatan', [KegiatanController::class, 'store'])->name('kegiatan.store');
     Route::post('/kegiatan/status', [KegiatanController::class, 'status'])->name('kegiatan.status');
     Route::put('/kegiatan/{kegiatan}', [KegiatanController::class, 'update'])->name('kegiatan.update');
 
-    Route::post('/monitoring', [MonitoringController::class, 'store'])->name('monitoring.store');
+    // Ubah monitoring: Admin semua, Petugas hanya miliknya (dicek di controller)
     Route::put('/monitoring/{monitoring}', [MonitoringController::class, 'update'])->name('monitoring.update');
+});
+
+// ---------- Catat monitoring: khusus Petugas (Admin hanya meninjau, mengubah, dan menghapus) ----------
+Route::middleware(EnsureRole::class . ':petugas')->group(function () {
+
+    Route::post('/monitoring', [MonitoringController::class, 'store'])->name('monitoring.store');
 });
 
 // ---------- Hapus data: khusus Admin ----------

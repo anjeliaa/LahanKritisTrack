@@ -6,21 +6,20 @@ use App\Models\DataLahan;
 use App\Support\Catalog;
 use App\Support\Fmt;
 use App\Support\Ui;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class PetugasController extends InternalController
 {
     protected string $role = 'petugas';
 
+    /** Peta menampilkan SEMUA kegiatan (informasi sebaran); pengelolaan dibatasi di halaman Kegiatan. */
     public function peta()
     {
         $kegiatan = Catalog::kegiatan();
 
-        $kritisTinggi = DataLahan::whereIn('kritis', [
-            config('lahan.kritis.kritis'),
-            config('lahan.kritis.sangat'),
-        ])->count();
+        // petak kritis yang BELUM selesai direhabilitasi
+        $kritisTinggi = DataLahan::select('id_lahan', 'kritis')->denganRehabilitasi()->get()
+            ->filter(fn ($l) => in_array($l->kritis, [config('lahan.kritis.kritis'), config('lahan.kritis.sangat')], true) && ! $l->sudah_direhabilitasi)
+            ->count();
 
         return $this->render(
             'petugas.peta',
@@ -35,9 +34,10 @@ class PetugasController extends InternalController
         );
     }
 
+    /** Hanya kegiatan yang menjadi tanggung jawab petugas yang login. */
     public function kegiatan()
     {
-        $kegiatan = Catalog::kegiatan();
+        $kegiatan = Catalog::kegiatan(userId: auth()->id());
 
         [$total, $berjalan, $selesai] = $this->hitungStatus($kegiatan);
 
@@ -46,7 +46,7 @@ class PetugasController extends InternalController
             'kegiatan',
             'petugas.kegiatan',
             [
-                Ui::tile('Total Kegiatan', $total, 'Program', 'white'),
+                Ui::tile('Total Kegiatan', $total, 'Tanggung jawab Anda', 'white'),
                 Ui::tile('Berjalan', $berjalan, 'Perlu update', 'green'),
                 Ui::tile('Selesai', $selesai, 'Tuntas', 'blue'),
             ],
@@ -54,9 +54,10 @@ class PetugasController extends InternalController
         );
     }
 
+    /** Riwayat monitoring pada kegiatan yang dikelola petugas (termasuk yang ia catat sendiri). */
     public function monitoring()
     {
-        $kegiatan = Catalog::kegiatan();
+        $kegiatan = Catalog::kegiatan(userId: auth()->id());
         $monitoring = Catalog::monitoring(auth()->user());
 
         return $this->render(
@@ -65,86 +66,14 @@ class PetugasController extends InternalController
             'petugas.monitoring',
             [
                 Ui::tile('Total Sesi', $monitoring->count(), 'Pemantauan', 'white'),
-                Ui::tile(
-                    'Rata-rata Progres',
-                    round($kegiatan->avg('progres') ?? 0) . '%',
-                    'Semua kegiatan',
-                    'green'
-                ),
-                Ui::tile(
-                    'Terpantau',
-                    $monitoring->pluck('id_kegiatan')->unique()->count(),
-                    'Kegiatan',
-                    'amber'
-                ),
+                Ui::tile('Rata-rata Progres', round($kegiatan->avg('progres') ?? 0).'%', 'Kegiatan Anda', 'green'),
+                Ui::tile('Terpantau', $monitoring->pluck('id_kegiatan')->unique()->count(), 'Kegiatan', 'amber'),
             ],
             [
-                'kegiatan' => $kegiatan,
+                'kegiatan'   => $kegiatan,
                 'monitoring' => $monitoring,
+                'monitoring_ringkas' => Catalog::monitoringRingkas($monitoring),
             ]
         );
-    }
-
-    // ---------- Profil Petugas ----------
-    public function profil()
-    {
-        return $this->render(
-            'petugas.profil',
-            'profil',
-            'petugas.profil',
-            [],
-            [
-                'user' => auth()->user(),
-            ]
-        );
-    }
-
-    // ---------- Perbarui Profil Petugas ----------
-    public function updateProfil(Request $request)
-    {
-        $user = auth()->user();
-
-        $data = $request->validate([
-            'nama' => [
-                'required',
-                'string',
-                'max:255',
-            ],
-
-            'username' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('users', 'username')
-                    ->ignore($user->id_user, 'id_user'),
-            ],
-
-            'password_lama' => [
-                'nullable',
-                'required_with:password_baru',
-                'current_password',
-            ],
-
-            'password_baru' => [
-                'nullable',
-                'string',
-                'min:8',
-                'confirmed',
-                'required_with:password_lama',
-            ],
-        ]);
-
-        $user->nama = $data['nama'];
-        $user->username = $data['username'];
-
-        if (!empty($data['password_baru'])) {
-            $user->password = $data['password_baru'];
-        }
-
-        $user->save();
-
-        return redirect()
-            ->route('petugas.profil')
-            ->with('success', 'Profil berhasil diperbarui.');
     }
 }

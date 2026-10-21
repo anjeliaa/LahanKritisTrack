@@ -50,18 +50,40 @@ class Catalog
             ->values();
     }
 
-    /** Kelas kekritisan yang benar-benar ada pada data (untuk pilihan filter & legenda). */
-    public static function kritisAda(): array
+    /**
+     * Kelas kekritisan yang benar-benar ada pada data (untuk pilihan filter & legenda).
+     *
+     * @param  bool  $publik   true = hanya kegiatan yang dipublikasikan yang dihitung (tampilan masyarakat)
+     * @param  bool  $efektif  true = ikut menampilkan "Telah Direhabilitasi" untuk petak yang kegiatannya Selesai;
+     *                         false = kelas asli data BPDAS saja (untuk pengelolaan data lahan)
+     */
+    public static function kritisAda(bool $publik = false, bool $efektif = true): array
     {
-        $ada = DataLahan::query()->distinct()->pluck('kritis')->all();
+        $q = DataLahan::query()->select('id_lahan', 'kritis');
+        if ($efektif) {
+            $q->denganRehabilitasi($publik);
+        }
+        $rows = $q->get();
 
-        return collect(config('lahan.kritis'))
-            ->filter(fn ($label) => in_array($label, $ada, true))
-            ->map(fn ($label, $v) => ['v' => $v, 'l' => $label])
-            ->values()
-            ->all();
+        $label = config('lahan.kritis');
+        $ada = $rows->filter(fn ($r) => ! ($efektif && $r->sudah_direhabilitasi))->pluck('kritis')->unique()->all();
+
+        $out = collect($label)
+            ->filter(fn ($l) => in_array($l, $ada, true))
+            ->map(fn ($l, $v) => ['v' => $v, 'l' => $l]);
+
+        if ($efektif && $rows->contains(fn ($r) => $r->sudah_direhabilitasi)) {
+            // tampil tepat setelah "Tidak Kritis"
+            $pulih = ['v' => 'pulih', 'l' => config('lahan.pulih.label')];
+            $out = $out->has('tidak')
+                ? $out->flatMap(fn ($x, $k) => $k === 'tidak' ? [['v' => 'tidak', 'l' => $x['l']], $pulih] : [$x])->keyBy('v')
+                : $out->prepend($pulih, 'pulih');
+        }
+
+        return $out->values()->all();
     }
 
+    /** Seluruh kelas kekritisan (untuk form ubah petak oleh Admin). */
     public static function kritisOpts(): array
     {
         return collect(config('lahan.kritis'))
@@ -84,11 +106,15 @@ class Catalog
             ]);
     }
 
-    public static function kegiatan(bool $publishedOnly = false, bool $forPublic = false): Collection
+    /** @param  int|null  $userId  bila diisi: hanya kegiatan yang dikelola (id_user) pengguna tsb. */
+    public static function kegiatan(bool $publishedOnly = false, bool $forPublic = false, ?int $userId = null): Collection
     {
-        $q = KegiatanRehabilitasi::with(['lahan', 'monitoringTerakhir'])->orderByDesc('id_kegiatan');
+        $q = KegiatanRehabilitasi::with(['lahan', 'monitoringTerakhir', 'pengelola'])->orderByDesc('id_kegiatan');
         if ($publishedOnly) {
             $q->published();
+        }
+        if ($userId !== null) {
+            $q->where('id_user', $userId);
         }
 
         return $q->get()->map(fn ($k) => self::kegiatanRow($k, $forPublic));
@@ -115,6 +141,8 @@ class Catalog
             'realisasi_fmt' => Fmt::ha($k->realisasi),
             'mulai'         => Fmt::tanggal($k->tanggal_mulai),
             'selesai'       => Fmt::tanggal($k->tanggal_selesai),
+            // tanggal penyelesaian sebenarnya = tanggal perubahan status menjadi Selesai
+            'selesai_aktual' => $k->status === 'Selesai' && $k->tanggal_status ? Fmt::tanggal($k->tanggal_status) : null,
             'status'        => $k->status,
             'status_class'  => $k->status_class,
             'progres'       => $k->progres,
@@ -125,6 +153,9 @@ class Catalog
         if ($forPublic) {
             return $row;
         }
+
+        $row['id_user'] = $k->id_user;
+        $row['pengelola'] = $k->pengelola?->nama;
 
         // pengisi otomatis form modal (nama kunci = atribut name pada form)
         $row['fill'] = self::json([
@@ -138,6 +169,7 @@ class Catalog
             'tanggal_selesai'  => $k->tanggal_selesai?->format('Y-m-d'),
             'status'           => $k->status,
             'is_published'     => $k->is_published ? '1' : '0',
+            'id_user'          => $k->id_user,
         ]);
         $row['fill_status'] = self::json(['kegiatan' => $k->id_kegiatan, 'status' => $k->status]);
         $row['url'] = route('kegiatan.update', $k->id_kegiatan);
@@ -146,11 +178,18 @@ class Catalog
         return $row;
     }
 
+    /** Petugas hanya melihat monitoring pada kegiatan yang ia kelola (atau yang ia catat sendiri); Admin melihat semua. */
     public static function monitoring(?User $viewer = null): Collection
     {
-        return Monitoring::with(['kegiatan.lahan', 'petugas'])
-            ->orderByDesc('tanggal_monitoring')->orderByDesc('id_monitoring')
-            ->get()
+        $q = Monitoring::with(['kegiatan.lahan', 'petugas'])
+            ->orderByDesc('tanggal_monitoring')->orderByDesc('id_monitoring');
+
+        if ($viewer && ! $viewer->isAdmin()) {
+            $q->where(fn ($w) => $w->where('id_user', $viewer->id_user)
+                ->orWhereHas('kegiatan', fn ($k) => $k->where('id_user', $viewer->id_user)));
+        }
+
+        return $q->get()
             ->map(fn ($m) => self::monitoringRow($m, $viewer));
     }
 
@@ -164,6 +203,8 @@ class Catalog
             'id_kegiatan' => $m->id_kegiatan,
             'kegiatan'    => $nama,
             'lokasi'      => $m->kegiatan?->lahan?->kecamatan ?? '-',
+            'id_lahan'    => $m->kegiatan?->id_lahan,
+            'status'      => $m->kegiatan?->status,
             'tanggal'     => Fmt::tanggal($m->tanggal_monitoring),
             'progres'     => $m->progres_persen,
             'kondisi'     => $m->kondisi_lahan,
@@ -172,6 +213,7 @@ class Catalog
             'petugas'     => $m->petugas?->nama ?? '—',
             'foto'        => $m->foto_url,
             'can_edit'    => $canEdit,
+            'can_delete'  => (bool) $viewer?->isAdmin(),
             'fill'        => self::json([
                 'id_kegiatan'        => $m->id_kegiatan,
                 'tanggal_monitoring' => $m->tanggal_monitoring->format('Y-m-d'),
@@ -190,6 +232,40 @@ class Catalog
         ];
     }
 
+    /**
+     * Satu baris per KEGIATAN (= per petak yang dipantau): menampilkan monitoring TERBARU,
+     * sedangkan seluruh catatan sebelumnya tersedia sebagai riwayat (JSON) untuk tombol Detail.
+     *
+     * @param  Collection  $rows  hasil monitoring(), sudah terurut terbaru -> terlama
+     */
+    public static function monitoringRingkas(Collection $rows): Collection
+    {
+        return $rows->groupBy('id_kegiatan')->map(function ($g) {
+            $terbaru = $g->first();
+
+            $riwayat = $g->map(fn ($r) => [
+                'id'            => $r['id'],
+                'tanggal'       => $r['tanggal'],
+                'progres'       => $r['progres'],
+                'kondisi'       => $r['kondisi'],
+                'kondisi_class' => $r['kondisi_class'],
+                'catatan'       => $r['catatan'],
+                'petugas'       => $r['petugas'],
+                'foto'          => $r['foto'],
+                'can_edit'      => $r['can_edit'],
+                'can_delete'    => $r['can_delete'],
+                'fill'          => $r['fill'],
+                'url'           => $r['url'],
+                'url_destroy'   => $r['url_destroy'],
+            ])->values()->all();
+
+            return $terbaru + [
+                'jumlah'  => $g->count(),
+                'riwayat' => self::json($riwayat),
+            ];
+        })->values();
+    }
+
     public static function lahanRow(DataLahan $l): array
     {
         return [
@@ -201,6 +277,8 @@ class Catalog
             'bpdas'        => $l->bpdas,
             'kritis'       => $l->kritis,
             'kritis_class' => $l->kritis_class,
+            'rehab'        => $l->sudah_direhabilitasi,
+            'rehab_tanggal' => $l->sudah_direhabilitasi && ($l->rehab_tanggal ?? null) ? Fmt::tanggal(\Carbon\Carbon::parse($l->rehab_tanggal)) : null,
             'luas'         => $l->luas_ha,
             'luas_fmt'     => Fmt::ha($l->luas_ha, 2),
             'q'            => mb_strtolower("{$l->kecamatan} {$l->kritis} {$l->bpdas} {$l->id_lahan}"),

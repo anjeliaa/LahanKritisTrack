@@ -12,6 +12,40 @@ use InvalidArgumentException;
 
 class LahanController extends Controller
 {
+    /** Tambah petak lahan secara manual (gambar polygon pada peta atau tempel GeoJSON). */
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'kecamatan_id' => ['required', 'integer', Rule::in(array_keys(config('lahan.kecamatan')))],
+            'wilayah'      => ['nullable', 'string', 'max:255'],
+            'bpdas'        => ['required', 'string', 'max:255'],
+            'kritis'       => ['required', Rule::in(array_values(config('lahan.kritis')))],
+            'luas_ha'      => ['nullable', 'numeric', 'min:0', 'max:999999999'],
+            'geometri'     => ['required', 'string'],
+        ], [
+            'geometri.required' => 'Gambar area petak pada peta (minimal 3 titik) atau tempel GeoJSON.',
+        ]);
+
+        try {
+            $geom = LahanImporter::normalizeGeometry($data['geometri']);
+        } catch (InvalidArgumentException $e) {
+            throw ValidationException::withMessages(['geometri' => $e->getMessage()]);
+        }
+
+        $lahan = DataLahan::create([
+            'wilayah'      => ($data['wilayah'] ?? null) ?: 'Kota Bengkulu',
+            'kecamatan_id' => $data['kecamatan_id'],
+            'kecamatan'    => config("lahan.kecamatan.{$data['kecamatan_id']}.nama"),
+            'bpdas'        => $data['bpdas'],
+            'kritis'       => $data['kritis'],
+            // luas kosong -> dihitung dari bentuk polygon
+            'luas_ha'      => ($data['luas_ha'] ?? null) !== null && $data['luas_ha'] !== '' ? round((float) $data['luas_ha'], 2) : round(LahanImporter::areaHa($geom), 2),
+            'geometri'     => $geom,
+        ]);
+
+        return $this->ok($request, "Petak lahan #{$lahan->id_lahan} ditambahkan.");
+    }
+
     public function update(Request $request, DataLahan $lahan)
     {
         $data = $request->validate([

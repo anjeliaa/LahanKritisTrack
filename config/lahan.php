@@ -39,7 +39,11 @@ return [
         'agak'      => '#f97316',
         'kritis'    => '#ef4444',
         'sangat'    => '#b91c1c',
+        'pulih'     => '#06b6d4',   // petak yang kegiatan rehabilitasinya sudah Selesai (status tampilan, bukan kelas BPDAS)
     ],
+
+    // Status TAMPILAN untuk petak yang sudah selesai direhabilitasi. Kelas kekritisan asli (data BPDAS) tidak diubah.
+    'pulih' => ['label' => 'Telah Direhabilitasi'],
 
     // kelas yang dihitung sebagai "lahan kritis" (Tidak Kritis dikecualikan)
     'kritis_dihitung' => ['sangat', 'kritis', 'agak', 'potensial'],

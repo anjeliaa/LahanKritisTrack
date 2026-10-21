@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Support\Catalog;
+use App\Models\User;
 use App\Support\Ui;
 use Illuminate\Support\Collection;
 
@@ -22,6 +23,12 @@ abstract class InternalController extends Controller
         $kecamatan = Catalog::kecamatanSemua();   // pilihan filter: semua kecamatan
         $kecamatanData = Catalog::kecamatan();    // form kegiatan: hanya kecamatan yang punya petak
 
+        // Pilihan kegiatan pada form (monitoring / update status): Petugas hanya yang ia kelola.
+        $user = auth()->user();
+        $kegiatanOpsi = ($user && ! $user->isAdmin())
+            ? $kegiatan->where('id_user', $user->id_user)->values()
+            : $kegiatan;
+
         $app = Catalog::app($kecamatan, $kegiatan, $data['app_extra'] ?? []);
         unset($data['app_extra']);
 
@@ -33,11 +40,16 @@ abstract class InternalController extends Controller
             'kecamatan'   => $kecamatan,
             'kecamatan_data' => $kecamatanData,
             'kegiatan'    => $kegiatan,
+            'kegiatan_opsi' => $kegiatanOpsi,
+            'petugas_opts' => ($user && $user->isAdmin())
+                ? User::where('role', 'petugas')->orderBy('nama')->get(['id_user', 'nama'])->map(fn ($u) => ['id' => $u->id_user, 'nama' => $u->nama])->all()
+                : [],
             'petak'       => Catalog::petak(),
             'status_opts' => config('lahan.status'),
             'kondisi_opts' => config('lahan.kondisi'),
             'kritis_opts' => Catalog::kritisOpts(),   // form ubah petak: semua kelas
-            'kritis_ada'  => Catalog::kritisAda(),    // filter: hanya kelas yang ada pada data
+            'kritis_ada'  => Catalog::kritisAda(),    // filter peta: kelas yang ada (termasuk Telah Direhabilitasi)
+            'kritis_data' => Catalog::kritisAda(false, efektif: false), // filter tabel data lahan: kelas asli BPDAS
             'app'         => $app,
         ], $data));
     }

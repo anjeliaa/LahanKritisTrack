@@ -1,4 +1,3 @@
-
 /* LahanKritisTrack — grafik dashboard (Chart.js) */
 (function () {
     'use strict';
@@ -102,24 +101,35 @@
                     type: 'bar',
                     data: {
                         labels: data.labels,
+                        // Dua batang menumpuk pada posisi yang sama (grouped:false):
+                        // target (abu-abu) di BELAKANG & lebih lebar, realisasi (hijau) di DEPAN & lebih ramping.
+                        // order lebih kecil digambar paling akhir (di atas).
                         datasets: [
                             {
                                 label: 'Target Luas (Ha)',
                                 data: data.target,
-                                backgroundColor: '#94a3b8',
-                                borderColor: '#64748b',
+                                backgroundColor: dark ? '#64748b' : '#cbd5e1',
+                                borderColor: dark ? '#94a3b8' : '#94a3b8',
                                 borderWidth: 1,
-                                borderRadius: 3,
-                                maxBarThickness: 48
+                                borderRadius: 4,
+                                grouped: false,
+                                order: 2,
+                                barPercentage: 0.9,
+                                categoryPercentage: 0.7,
+                                maxBarThickness: 64
                             },
                             {
-                                label: 'Realisasi Reboisasi (Ha)',
+                                label: 'Realisasi Rehabilitasi (Ha)',
                                 data: data.real,
                                 backgroundColor: '#16a34a',
                                 borderColor: '#15803d',
                                 borderWidth: 1,
-                                borderRadius: 3,
-                                maxBarThickness: 48
+                                borderRadius: 4,
+                                grouped: false,
+                                order: 1,
+                                barPercentage: 0.5,
+                                categoryPercentage: 0.7,
+                                maxBarThickness: 40
                             }
                         ]
                     },
@@ -127,6 +137,8 @@
                         responsive: true,
                         maintainAspectRatio: false,
                         animation: false,
+                        // tooltip menampilkan target & realisasi sekaligus walau batangnya menumpuk
+                        interaction: { mode: 'index', intersect: false },
                         plugins: {
                             legend: {
                                 display: true,
@@ -184,7 +196,6 @@
             }
         }
 
-        console.log('Data dashboard:', dashboard);
     }
 
     // Jalankan setelah dokumen siap.

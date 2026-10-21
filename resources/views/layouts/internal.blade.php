@@ -21,7 +21,7 @@
         </a>
         <div class="int-right">
             <button type="button" class="icon-btn" data-theme-toggle aria-label="Ganti tema"><svg class="ic"><use href="#i-moon"/></svg></button>
-            <span class="role-pill">{{ $role === 'admin' ? 'Admin' : 'Petugas' }}</span>
+            <a href="{{ route('profil') }}" class="profile-btn {{ $active === 'profil' ? 'active' : '' }}" title="Pengaturan akun — {{ auth()->user()->nama }} ({{ $role === 'admin' ? 'Admin' : 'Petugas' }})" aria-label="Pengaturan akun {{ auth()->user()->nama }}, {{ $role === 'admin' ? 'Admin' : 'Petugas' }}"><svg class="ic" aria-hidden="true"><use href="#i-user"/></svg></a>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit" class="btn btn-red-soft" style="padding:6px 12px;border-radius:8px"><svg class="ic"><use href="#i-logout"/></svg> Keluar</button>

@@ -20,7 +20,11 @@ class AdminController extends InternalController
         $labelHitung = collect(config('lahan.kritis_dihitung'))->map(fn ($c) => config("lahan.kritis.{$c}"));
 
         // --- KPI ---
-        $totalKritis = (float) DataLahan::whereIn('kritis', $labelHitung)->sum('luas_ha');
+        // Status "tampil": petak yang kegiatan rehabilitasinya sudah Selesai tidak lagi dihitung sebagai lahan kritis.
+        $lahan = DataLahan::select('id_lahan', 'kritis', 'luas_ha')->denganRehabilitasi()->get();
+        $totalKritis = (float) $lahan
+            ->filter(fn ($l) => $labelHitung->contains($l->kritis) && ! $l->sudah_direhabilitasi)
+            ->sum('luas_ha');
         $jmlKec = Catalog::kecamatan()->count(); // kecamatan yang memiliki data lahan
         $target = (float) $kegiatan->sum('target_luas');
         $real = (float) $kegiatan->sum(fn ($k) => $k->realisasi);
@@ -38,12 +42,14 @@ class AdminController extends InternalController
         // --- donut: luas per tingkat kekritisan (urutan = warna pada dashboard.js) ---
         // Hanya kelas yang benar-benar ada pada data (mis. "Sangat Kritis" tidak muncul bila 0 petak),
         // urutan & warna sama dengan legenda peta.
-        $perKritis = DataLahan::selectRaw('kritis, SUM(luas_ha) as ha')->groupBy('kritis')->pluck('ha', 'kritis');
-        $ada = collect(config('lahan.kritis'))->filter(fn ($label) => $perKritis->has($label));
+        // Dikelompokkan menurut kelas tampil; "Telah Direhabilitasi" tampil tepat setelah "Tidak Kritis".
+        $perKelas = $lahan->groupBy('kritis_tampil_class')->map(fn ($g) => round((float) $g->sum('luas_ha'), 2));
+        $urut = collect(array_keys(config('lahan.kritis')))->flatMap(fn ($c) => $c === 'tidak' ? ['tidak', 'pulih'] : [$c]);
+        $ada = $urut->filter(fn ($c) => $perKelas->has($c))->values();
         $donut = [
-            'labels' => $ada->values()->all(),
-            'values' => $ada->map(fn ($label) => round((float) $perKritis[$label], 2))->values()->all(),
-            'colors' => $ada->keys()->map(fn ($c) => config("lahan.warna.{$c}"))->values()->all(),
+            'labels' => $ada->map(fn ($c) => $c === 'pulih' ? config('lahan.pulih.label') : config("lahan.kritis.{$c}"))->all(),
+            'values' => $ada->map(fn ($c) => $perKelas[$c])->all(),
+            'colors' => $ada->map(fn ($c) => config("lahan.warna.{$c}"))->all(),
         ];
 
         // --- bar: target vs realisasi per kecamatan ---
@@ -53,25 +59,31 @@ class AdminController extends InternalController
         ])->sortKeys();
         $bars = ['labels' => $perKec->keys()->values()->all(), 'target' => $perKec->pluck('target')->values()->all(), 'real' => $perKec->pluck('real')->values()->all()];
 
-        // --- aktivitas monitoring terbaru ---
-        $tone = ['Membaik' => ['green', 'checkc'], 'Stabil' => ['blue', 'refresh'], 'Memburuk' => ['red', 'flag']];
+        // --- timeline aktivitas monitoring lapangan terbaru ---
+        // Warna mengikuti pita progres: <25% kuning, 25-49% biru, 50-99% hijau, 100% gelap (selesai).
+        $pita = fn (int $p) => match (true) {
+            $p >= 100 => ['chip' => 'dark',  'pill' => 'dark'],
+            $p >= 50  => ['chip' => 'green', 'pill' => 'green'],
+            $p >= 25  => ['chip' => 'blue',  'pill' => 'blue'],
+            default   => ['chip' => 'amber', 'pill' => 'red'],
+        };
+
         $feed = Monitoring::with(['kegiatan.lahan', 'petugas'])
-            ->orderByDesc('created_at')->orderByDesc('id_monitoring')->limit(6)->get()
-            ->map(function ($m) use ($tone) {
-                [$warna, $ikon] = $tone[$m->kondisi_lahan] ?? ['blue', 'refresh'];
-                if ($m->foto_dokumentasi) {
-                    [$warna, $ikon] = ['orange', 'camera'];
-                }
+            ->orderByDesc('tanggal_monitoring')->orderByDesc('id_monitoring')->limit(5)->get()
+            ->map(function ($m) use ($pita) {
+                $warna = $pita((int) $m->progres_persen);
 
                 return [
-                    'jam'     => $m->created_at->format('H:i'),
-                    'tgl'     => Fmt::tanggal($m->tanggal_monitoring),
-                    'judul'   => "Progres fisik tercatat {$m->progres_persen}% · kondisi {$m->kondisi_lahan}",
-                    'sub'     => ($m->kegiatan?->nama_kegiatan ?? '(kegiatan dihapus)').' · '.($m->kegiatan?->lahan?->kecamatan ?? '-'),
-                    'petugas' => $m->petugas?->nama ?? '—',
-                    'status'  => $m->foto_dokumentasi ? 'Ada dokumentasi' : $m->kondisi_lahan,
-                    'tone'    => $warna,
-                    'icon'    => $ikon,
+                    'tanggal'  => $m->tanggal_monitoring->format('Y-m-d'),
+                    'judul'    => $m->kegiatan?->nama_kegiatan ?? '(kegiatan dihapus)',
+                    'catatan'  => $m->catatan ?: "Progres fisik tercatat {$m->progres_persen}%, kondisi lahan {$m->kondisi_lahan}.",
+                    'petugas'  => $m->petugas?->nama ?? '—',
+                    'lokasi'   => $m->kegiatan?->lahan?->kecamatan ?? '-',
+                    'progres'  => (int) $m->progres_persen,
+                    'selesai'  => $m->kegiatan?->status === 'Selesai' && (int) $m->progres_persen >= 100,
+                    'foto'     => $m->foto_url,
+                    'chip'     => $warna['chip'],
+                    'pill'     => $warna['pill'],
                 ];
             })->all();
 
@@ -112,7 +124,7 @@ class AdminController extends InternalController
 
     public function lahan()
     {
-        $lahan = DataLahan::orderBy('kecamatan')->orderBy('id_lahan')->get();
+        $lahan = DataLahan::denganRehabilitasi()->orderBy('kecamatan')->orderBy('id_lahan')->get();
         $kegiatan = Catalog::kegiatan();
         $kritisTinggi = $lahan->whereIn('kritis', [config('lahan.kritis.kritis'), config('lahan.kritis.sangat')])->count();
 
@@ -152,6 +164,6 @@ class AdminController extends InternalController
             Ui::tile('Rata-rata Progres', round($kegiatan->avg('progres') ?? 0).'%', 'Semua kegiatan', 'green'),
             Ui::tile('Petugas Aktif', Monitoring::whereNotNull('id_user')->distinct()->count('id_user'), 'Mencatat monitoring', 'amber'),
             Ui::tile('Kondisi', ($monitoring->count() ? round($membaik / $monitoring->count() * 100) : 0).'%', 'Membaik', 'blue'),
-        ], ['kegiatan' => $kegiatan, 'monitoring' => $monitoring]);
+        ], ['kegiatan' => $kegiatan, 'monitoring' => $monitoring, 'monitoring_ringkas' => Catalog::monitoringRingkas($monitoring)]);
     }
 }

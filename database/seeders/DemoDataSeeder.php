@@ -53,7 +53,8 @@ class DemoDataSeeder extends Seeder
                     'tanggal_mulai'    => $k['mulai'],
                     'tanggal_selesai'  => $k['selesai'],
                     'status'           => $k['status'],
-                    'tanggal_status'   => $k['mulai'],
+                    // kegiatan Selesai: tanggal status = tanggal penyelesaian (tanggal monitoring 100%)
+                    'tanggal_status'   => ($k['status'] === 'Selesai' && $k['mon']) ? $k['mon'][0] : $k['mulai'],
                     'is_published'     => $k['pub'],
                 ]
             );

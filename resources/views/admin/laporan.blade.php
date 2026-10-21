@@ -1,4 +1,3 @@
-
 @extends('layouts.internal')
 @section('title', 'Laporan — LahanKritisTrack')
 

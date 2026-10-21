@@ -50,6 +50,8 @@
   function openModal(id, trigger) {
     const bd = document.getElementById(id);
     if (!bd) return;
+    /* membuka modal dari dalam modal lain (mis. Ubah dari Riwayat) -> tutup modal asal terlebih dahulu */
+    $$('.modal-backdrop.open').forEach((o) => { if (o !== bd) o.classList.remove('open'); });
     const form = $('form', bd);
     const ds = (trigger && trigger.dataset) || {};
     if (form) {
@@ -79,9 +81,11 @@
     if (ds.title) { const h = $('[data-modal-title]', bd); if (h) h.textContent = ds.title; }
     if (trigger) { const chip = $('.chip-ico', bd.querySelector('.modal-head') || bd); if (chip && ds.tone !== undefined) chip.className = 'chip-ico ' + (ds.tone || 'green'); }
     if (ds.detail) fillDetail(bd, JSON.parse(ds.detail));
+    if (ds.riwayat) fillRiwayat(bd, JSON.parse(ds.riwayat), ds);
     if (ds.name) $$('[data-fill-name]', bd).forEach((n) => (n.textContent = ds.name));
     const info = $('.file-row[id]', bd); if (info) info.style.display = 'none';
     bd.classList.add('open');
+    bd.dispatchEvent(new CustomEvent('modal:open'));
     document.body.style.overflow = 'hidden';
     const first = $('input:not([type=hidden]),select,textarea', bd);
     if (first && !ds.name) setTimeout(() => first.focus(), 50);
@@ -98,6 +102,55 @@
     const list = bd.querySelector('[data-field="kegiatan"]');
     if (list) list.innerHTML = kg.length ? kg.map((k) => '<div class="mini-item"><span>' + esc(k.nama) + '</span><span class="badge b-' + k.status_class + '">' + k.status + '</span></div>').join('') : '<div class="empty">Belum ada kegiatan pada petak ini.</div>';
   }
+  /* Riwayat monitoring: semua teks dimasukkan lewat textContent (aman dari XSS) */
+  function fillRiwayat(bd, list, ds) {
+    const set = (k, v) => { const n = bd.querySelector('[data-field="' + k + '"]'); if (n) n.textContent = v; };
+    const mk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+    const latest = list[0] || { progres: 0, kondisi: '-', kondisi_class: '' };
+    set('sub', ds.sub || ''); set('jumlah', list.length + ' catatan'); set('progres', latest.progres + '%');
+    const bar = bd.querySelector('[data-field="bar"]'); if (bar) bar.style.width = latest.progres + '%';
+    const kb = bd.querySelector('[data-field="kondisi"]'); if (kb) { kb.textContent = latest.kondisi; kb.className = 'badge b-' + latest.kondisi_class; }
+
+    const box = bd.querySelector('[data-field="riwayat"]'); box.textContent = '';
+    list.forEach((r, i) => {
+      const item = mk('div', 'tl-item' + (i === 0 ? ' latest' : ''));
+      item.appendChild(mk('div', 'tl-date', r.tanggal));
+      const card = mk('div', 'tl-card');
+
+      const head = mk('div', 'tl-head');
+      head.appendChild(mk('b', 'mono', r.progres + '%'));
+      head.appendChild(mk('span', 'badge b-' + r.kondisi_class, r.kondisi));
+      if (i === 0) head.appendChild(mk('span', 'tl-new', 'Terbaru'));
+      card.appendChild(head);
+
+      const pr = mk('div', 'progress'); pr.appendChild(document.createElement('i')).style.width = r.progres + '%'; card.appendChild(pr);
+      if (r.catatan && r.catatan !== '-') card.appendChild(mk('p', 'tl-note', r.catatan));
+
+      const meta = mk('div', 'tl-meta'); meta.appendChild(mk('span', '', 'Dicatat oleh ' + r.petugas)); card.appendChild(meta);
+
+      if (r.foto) {
+        const a = mk('a', 'thumb'); a.href = r.foto; a.target = '_blank'; a.rel = 'noopener';
+        const im = document.createElement('img'); im.src = r.foto; im.alt = 'Dokumentasi'; im.loading = 'lazy'; a.appendChild(im); card.appendChild(a);
+      }
+
+      if (r.can_edit || r.can_delete) {
+        const acts = mk('div', 'tl-acts');
+        if (r.can_edit) {
+          const b = mk('button', 'act act-ubah'); b.type = 'button'; b.innerHTML = '<svg class="ic"><use href="#i-pen"/></svg> Ubah';
+          Object.assign(b.dataset, { open: 'modal-monitoring', title: 'Ubah Laporan Monitoring', tone: 'amber', fill: r.fill, action: r.url, method: 'PUT' });
+          acts.appendChild(b);
+        }
+        if (r.can_delete) {
+          const b = mk('button', 'act act-hapus'); b.type = 'button'; b.innerHTML = '<svg class="ic"><use href="#i-trash"/></svg> Hapus';
+          Object.assign(b.dataset, { open: 'modal-hapus', name: 'Catatan monitoring ' + (ds.name || '') + ' (' + r.tanggal + ')', action: r.url_destroy, method: 'DELETE' });
+          acts.appendChild(b);
+        }
+        card.appendChild(acts);
+      }
+      item.appendChild(card); box.appendChild(item);
+    });
+  }
+
   function closeModal(bd) {
     if (!bd) return;
     bd.classList.remove('open');

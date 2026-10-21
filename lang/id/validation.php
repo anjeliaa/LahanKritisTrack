@@ -29,9 +29,15 @@ return [
         'string'  => ':attribute maksimal :max karakter.',
         'file'    => ':attribute maksimal :max KB.',
     ],
+    'current_password' => 'Kata sandi saat ini salah.',
+    'confirmed' => 'Konfirmasi :attribute tidak cocok.',
+    'different' => ':attribute harus berbeda dari :other.',
     'uploaded' => ':attribute gagal diunggah. Periksa batas ukuran berkas pada php.ini (upload_max_filesize).',
 
     'attributes' => [
+        'password_lama'      => 'Kata sandi saat ini',
+        'password_baru'      => 'Kata sandi baru',
+        'id_user'            => 'Petugas penanggung jawab',
         'nama'               => 'Nama',
         'username'           => 'Username',
         'password'           => 'Kata sandi',

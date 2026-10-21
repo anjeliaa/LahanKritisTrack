@@ -38,7 +38,7 @@ img{max-width:100%}.mono{font-family:var(--mono)}.sr-only{position:absolute;widt
 .btn-dark{background:rgba(30,41,59,.8);border:1px solid #334155;color:#e2e8f0}
 .btn-lg{padding:14px 24px;font-size:13px;font-weight:800}.btn-block{width:100%}
 .badge{display:inline-block;padding:2px 8px;border-radius:6px;font:700 10px/1.6 var(--mono);white-space:nowrap}
-.b-tidak{background:#dcfce7;color:#15803d}.b-sangat{background:#fecaca;color:#991b1b}.b-kritis{background:#fee2e2;color:#dc2626}.b-agak{background:#ffedd5;color:#ea580c}.b-potensial{background:#fef9c3;color:#a16207}.b-berjalan,.b-membaik{background:#d1fae5;color:#059669}.b-selesai{background:#dbeafe;color:#2563eb}.b-rencana{background:#ffedd5;color:#ea580c}.b-admin,.b-petugas{background:#f1f5f9;color:#334155}
+.b-tidak{background:#dcfce7;color:#15803d}.b-pulih{background:#cffafe;color:#0e7490}.b-sangat{background:#fecaca;color:#991b1b}.b-kritis{background:#fee2e2;color:#dc2626}.b-agak{background:#ffedd5;color:#ea580c}.b-potensial{background:#fef9c3;color:#a16207}.b-berjalan,.b-membaik{background:#d1fae5;color:#059669}.b-selesai{background:#dbeafe;color:#2563eb}.b-rencana{background:#ffedd5;color:#ea580c}.b-admin,.b-petugas{background:#f1f5f9;color:#334155}
 [data-theme=dark] .b-admin,[data-theme=dark] .b-petugas{background:#1e293b;color:#cbd5e1}
 .act{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:8px;font-weight:700;font-size:12px;transition:.15s}
 .act .ic{font-size:13px}.act-ubah{background:#fffbeb;color:#d97706}.act-hapus{background:#fef2f2;color:#dc2626}.act-detail{background:#eff6ff;color:#2563eb}.act-upd{background:#ecfdf5;color:#059669}
@@ -333,3 +333,70 @@ a.thumb{cursor:zoom-in}
 @media(max-width:560px){.cb{right:14px;bottom:14px}.cb-panel{position:fixed;right:10px;left:10px;bottom:84px;width:auto;max-width:none;height:min(560px,calc(100vh - 110px))}.cb-fab-tip{display:none}}
 @media print{.cb{display:none}}
 @media(prefers-reduced-motion:reduce){.cb-fab,.cb-fab-ic,.cb-typing i{transition:none;animation:none}}
+
+/* ---- ikon profil pada topbar & halaman Pengaturan Akun ---- */
+.profile-btn{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--brand-800);border:1.5px solid rgba(74,222,128,.45);color:var(--brand-200);font-size:18px;transition:.15s}
+.profile-btn:hover{background:var(--brand-700);border-color:var(--brand-300,#86efac);color:#fff}
+.profile-btn:focus-visible{outline:3px solid var(--brand-200);outline-offset:2px}
+.profile-btn.active{background:var(--brand-500);color:#fff;border-color:#fff}
+.profile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}
+.profile-body{padding:20px;display:flex;flex-direction:column;gap:14px}
+.profile-id{display:flex;align-items:center;gap:14px}
+.profile-id h3{font-size:17px;font-weight:800;margin:0}
+.profile-avatar{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--brand-500),var(--brand-700));color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;flex:none}
+@media(max-width:860px){.profile-grid{grid-template-columns:1fr}}
+
+[data-theme=dark] .b-pulih{background:#0e3a44;color:#67e8f9}
+
+/* ---- riwayat monitoring (modal Detail) ---- */
+.modal.wide{max-width:720px}
+.rw-summary{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--soft)}
+.rw-summary small{display:block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+.tl{display:flex;flex-direction:column;gap:0;margin-top:6px;max-height:46vh;overflow-y:auto;padding-right:4px}
+.tl-item{display:grid;grid-template-columns:88px 1fr;gap:14px;position:relative;padding-bottom:16px}
+.tl-item::before{content:"";position:absolute;left:92px;top:14px;bottom:-2px;width:2px;background:var(--line)}
+.tl-item:last-child::before{display:none}
+.tl-date{font:700 12px var(--mono);color:var(--text2);padding-top:2px;text-align:right}
+.tl-card{position:relative;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--card);margin-left:10px}
+.tl-card::before{content:"";position:absolute;left:-17px;top:8px;width:10px;height:10px;border-radius:50%;background:var(--brand-500);box-shadow:0 0 0 3px var(--card)}
+.tl-item.latest .tl-card{border-color:var(--brand-500)}
+.tl-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:6px}
+.tl-new{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#fff;background:var(--brand-600);border-radius:999px;padding:2px 8px}
+.tl-note{font-size:12.5px;line-height:1.55;color:var(--text2);margin:6px 0;white-space:pre-wrap;word-break:break-word}
+.tl-meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:11.5px;color:var(--muted)}
+.tl-card .thumb{width:54px;height:54px;border-radius:8px;margin-top:8px}
+.tl-acts{display:flex;gap:6px;margin-top:8px}
+@media(max-width:600px){.rw-summary{grid-template-columns:1fr}.tl-item{grid-template-columns:1fr}.tl-item::before{display:none}.tl-date{text-align:left}.tl-card{margin-left:0}.tl-card::before{display:none}}
+
+/* ---- timeline aktivitas monitoring (dashboard) ---- */
+.tl2{display:flex;flex-direction:column}
+.tl2-all{border-radius:999px;font-size:12px;padding:6px 16px;color:var(--brand-700);border-color:var(--brand-200);background:var(--brand-50)}
+.tl2-row{display:grid;grid-template-columns:112px 60px minmax(0,1fr) auto;grid-template-rows:auto 6px;column-gap:16px;row-gap:10px;align-items:center;padding:16px 20px 14px;border-top:1px solid var(--line2)}
+.tl2-row:hover{background:var(--soft)}
+.tl2-date{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 6px 14px;border-radius:12px;border:1px solid transparent;font-size:15px}
+.tl2-date b{font:700 11.5px var(--mono);letter-spacing:.01em}
+.tl2-date.amber{background:#fef3c7;color:#b45309;border-color:#fde68a}.tl2-date.blue{background:#dbeafe;color:#1d4ed8;border-color:#bfdbfe}
+.tl2-date.green{background:#d1fae5;color:#047857;border-color:#a7f3d0}.tl2-date.dark{background:#052e1b;color:#86efac;border-color:#14532d}
+.tl2-dot{position:absolute;left:50%;bottom:-6px;width:10px;height:10px;margin-left:-5px;border-radius:50%;border:2px solid var(--card)}
+.tl2-dot.amber{background:#f59e0b}.tl2-dot.blue{background:#3b82f6}.tl2-dot.green{background:#10b981}.tl2-dot.dark{background:#052e1b}
+.tl2-thumb{width:56px;height:56px;border-radius:10px;overflow:hidden;background:linear-gradient(135deg,#86efac,#16a34a);display:block}
+.tl2-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.tl2-main{min-width:0}
+.tl2-title{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.tl2-title b{font-size:13.5px}
+.tl2-tag{font-size:9.5px;font-weight:800;letter-spacing:.06em;color:#86efac;background:#052e1b;border-radius:6px;padding:2px 7px}
+.tl2-desc{font-size:12px;color:var(--muted);margin:3px 0 5px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.tl2-meta{display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:var(--faint)}.tl2-meta span{display:inline-flex;align-items:center;gap:4px}.tl2-meta .ic{font-size:12px}
+.tl2-pill{font:800 12px var(--mono);padding:5px 14px;border-radius:999px;min-width:56px;text-align:center}
+.tl2-pill.red{background:#fee2e2;color:#dc2626}.tl2-pill.blue{background:#dbeafe;color:#1d4ed8}.tl2-pill.green{background:#d1fae5;color:#047857}.tl2-pill.dark{background:#052e1b;color:#86efac}
+.tl2-bar{grid-column:3 / 5;grid-row:2;height:4px;border-radius:99px;background:var(--line2);overflow:hidden}.tl2-bar i{display:block;height:100%;border-radius:99px}
+.tl2-bar.red i{background:#ef4444}.tl2-bar.blue i{background:#3b82f6}.tl2-bar.green i{background:#10b981}.tl2-bar.dark i{background:#052e1b}
+[data-theme=dark] .tl2-date.amber{background:#3a2e10;color:#fcd34d;border-color:#4a3a14}[data-theme=dark] .tl2-date.blue{background:#12264a;color:#93c5fd;border-color:#1e3a6e}
+[data-theme=dark] .tl2-date.green{background:#0f2e22;color:#6ee7b7;border-color:#14532d}[data-theme=dark] .tl2-bar.dark i,[data-theme=dark] .tl2-dot.dark{background:#86efac}
+@media(max-width:760px){.tl2-row{grid-template-columns:96px minmax(0,1fr) auto}.tl2-thumb{display:none}.tl2-bar{grid-column:2 / 4}}
+
+/* ---- tambah data lahan: peta gambar polygon ---- */
+.draw-map{height:300px;border-radius:12px;border:1px solid var(--line);overflow:hidden;cursor:crosshair;background:var(--soft)}
+.draw-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;font-size:12px;font-weight:700;color:var(--text2)}
+.draw-bar .btn{height:32px;padding:0 12px;font-size:12px}.draw-spacer{flex:1}
+.draw-paste{margin-top:10px}.draw-paste summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--brand-700)}
+.draw-paste textarea{margin-top:8px;font-family:var(--mono);font-size:11px;min-height:84px}

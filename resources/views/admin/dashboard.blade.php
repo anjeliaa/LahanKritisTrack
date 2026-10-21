@@ -1,4 +1,3 @@
-
 @extends('layouts.internal')
 @section('title', 'Dashboard — LahanKritisTrack')
 
@@ -55,69 +54,52 @@
         <div>
             <h3>
                 <svg class="ic"><use href="#i-bars"/></svg>
-                Aktivitas monitoring terbaru
+                Timeline Aktivitas Monitoring Lapangan Terbaru
             </h3>
-            <span class="sub">Pembaruan lapangan dan jejak verifikasi</span>
+            <span class="sub">{{ count($dash['feed']) }} aktivitas terakhir tercatat</span>
         </div>
-        <a href="{{ route('admin.monitoring') }}" class="btn btn-outline">
-            Lihat semua aktivitas
-            <svg class="ic"><use href="#i-arrowright"/></svg>
-        </a>
+        <a href="{{ route('admin.monitoring') }}" class="btn btn-outline tl2-all">Lihat Semua</a>
     </div>
 
-    <div class="feed">
+    <div class="tl2">
         @forelse($dash['feed'] as $f)
-        <div class="feed-row">
-            <div class="feed-time">
-                <b>{{ $f['jam'] }}</b>
-                <small>{{ $f['tgl'] }}</small>
+        <article class="tl2-row">
+            <div class="tl2-date {{ $f['chip'] }}">
+                <svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg>
+                <b>{{ $f['tanggal'] }}</b>
+                <i class="tl2-dot {{ $f['chip'] }}" aria-hidden="true"></i>
             </div>
 
-            <div class="feed-main">
-                <span class="feed-ico {{ $f['tone'] }}">
-                    <svg class="ic">
-                        <use href="#i-{{ $f['icon'] }}"/>
-                    </svg>
-                </span>
-                <div>
+            @if($f['foto'])
+            <a class="tl2-thumb" href="{{ $f['foto'] }}" target="_blank" rel="noopener"><img src="{{ $f['foto'] }}" alt="Dokumentasi" loading="lazy"></a>
+            @else
+            <div class="tl2-thumb" aria-hidden="true"></div>
+            @endif
+
+            <div class="tl2-main">
+                <div class="tl2-title">
                     <b>{{ $f['judul'] }}</b>
-                    <small>{{ $f['sub'] }}</small>
+                    @if($f['selesai'])<span class="tl2-tag">SELESAI</span>@endif
+                </div>
+                <div class="tl2-desc">{{ $f['catatan'] }}</div>
+                <div class="tl2-meta">
+                    <span><svg class="ic" aria-hidden="true"><use href="#i-user"/></svg> {{ $f['petugas'] }}</span>
+                    <span><svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg> {{ $f['lokasi'] }}</span>
                 </div>
             </div>
 
-            <div class="feed-who">{{ $f['petugas'] }}</div>
-
-            <div>
-                <span class="pillst {{ $f['tone'] }}">
-                    {{ $f['status'] }}
-                </span>
-            </div>
-
-            <button type="button" class="dots" aria-label="Menu">
-                <svg class="ic"><use href="#i-dots"/></svg>
-            </button>
-        </div>
+            <span class="tl2-pill {{ $f['pill'] }}">{{ $f['progres'] }}%</span>
+            <div class="tl2-bar {{ $f['pill'] }}"><i style="width:{{ $f['progres'] }}%"></i></div>
+        </article>
         @empty
-        <div class="empty" style="padding:24px">
-            Belum ada aktivitas monitoring.
-        </div>
+        <div class="empty" style="padding:24px">Belum ada aktivitas monitoring.</div>
         @endforelse
     </div>
 </section>
 @endsection
 
 @push('scripts')
-<script>
-    window.APP = @json($app);
-
-    // Memastikan data grafik tersedia sebelum dashboard.js dijalankan.
-    window.APP = window.APP || {};
-    window.APP.dashboard = window.APP.dashboard || {};
-
-    console.log('Data dashboard:', window.APP);
-    console.log('Data grafik:', window.APP.dashboard);
-</script>
-
+<script>window.APP = @json($app);</script>
 <script src="{{ asset('vendor/chartjs/chart.umd.js') }}"></script>
 <script src="{{ asset('js/dashboard.js') }}"></script>
 @endpush

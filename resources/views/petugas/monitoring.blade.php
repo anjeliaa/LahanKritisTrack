@@ -6,6 +6,7 @@
 @endsection
 
 @section('modals')
+@include('partials.modals.riwayat-monitoring')
 @include('partials.modals.monitoring')
 @include('partials.modals.hapus')
 @include('partials.modals.status-progres')

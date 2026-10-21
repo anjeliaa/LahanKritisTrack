@@ -16,9 +16,39 @@ class DataLahan extends Model
     protected function casts(): array
     {
         return [
-            'luas_ha'  => 'float',
-            'geometri' => 'array',
+            'luas_ha'       => 'float',
+            'geometri'      => 'array',
+            'rehab_selesai' => 'boolean',   // hasil scopeDenganRehabilitasi()
         ];
+    }
+
+    /**
+     * Menambahkan penanda "sudah direhabilitasi": petak memiliki kegiatan berstatus Selesai.
+     * $hanyaPublished = true untuk tampilan publik (hanya kegiatan yang dipublikasikan yang dihitung).
+     */
+    public function scopeDenganRehabilitasi($query, bool $hanyaPublished = false)
+    {
+        $selesai = fn ($k) => $k->where('status', 'Selesai')->when($hanyaPublished, fn ($x) => $x->where('is_published', true));
+
+        return $query
+            ->withExists(['kegiatan as rehab_selesai' => $selesai])
+            ->withMax(['kegiatan as rehab_tanggal' => $selesai], 'tanggal_status');
+    }
+
+    public function getSudahDirehabilitasiAttribute(): bool
+    {
+        return (bool) ($this->attributes['rehab_selesai'] ?? false);
+    }
+
+    /** Kelas yang DITAMPILKAN pada peta: petak yang sudah selesai direhabilitasi tidak lagi tampil sebagai lahan kritis. */
+    public function getKritisTampilClassAttribute(): string
+    {
+        return $this->sudah_direhabilitasi ? 'pulih' : $this->kritis_class;
+    }
+
+    public function getKritisTampilAttribute(): string
+    {
+        return $this->sudah_direhabilitasi ? config('lahan.pulih.label') : $this->kritis;
     }
 
     /** kelas kekritisan (tidak|potensial|agak|kritis|sangat) dari label `kritis` */
@@ -47,8 +77,12 @@ class DataLahan extends Model
             'type'       => 'Feature',
             'properties' => [
                 'id_lahan'     => $this->id_lahan,
-                'kritis'       => $this->kritis,
-                'kritis_class' => $this->kritis_class,
+                'kritis'       => $this->kritis_tampil,          // label yang ditampilkan
+                'kritis_class' => $this->kritis_tampil_class,   // kelas warna/filter pada peta
+                'kritis_asli'  => $this->kritis,                // data BPDAS (tidak diubah)
+                'rehab'        => $this->sudah_direhabilitasi,
+                'rehab_tanggal' => $this->sudah_direhabilitasi && ($this->attributes['rehab_tanggal'] ?? null)
+                    ? \App\Support\Fmt::tanggal(\Carbon\Carbon::parse($this->attributes['rehab_tanggal'])) : null,
                 'kecamatan'    => $this->kecamatan,
                 'kec_slug'     => $this->kec_slug,
                 'bpdas'        => $this->bpdas,

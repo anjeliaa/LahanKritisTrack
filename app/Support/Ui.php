@@ -24,7 +24,6 @@ class Ui
                 ['key' => 'peta', 'label' => 'Lihat Peta Lahan Kritis', 'route' => 'petugas.peta', 'icon' => 'pin'],
                 ['key' => 'kegiatan', 'label' => 'Manajemen Kegiatan Rehabilitasi', 'route' => 'petugas.kegiatan', 'icon' => 'sprout'],
                 ['key' => 'monitoring', 'label' => 'Manajemen Kegiatan Monitoring', 'route' => 'petugas.monitoring', 'icon' => 'clipcheck'],
-                ['key' => 'profil', 'label' => 'Profil Petugas', 'route' => 'petugas.profil', 'icon' => 'users'],
             ],
         ][$role];
     }
@@ -42,7 +41,7 @@ class Ui
             'petugas.peta' => ['map', 'Peta Lahan Kritis Spasial', 'Telusuri sebaran lahan kritis per kecamatan dan tambahkan kegiatan langsung dari peta.'],
             'petugas.kegiatan' => ['sprout', 'Kegiatan Rehabilitasi Lahan', 'Perbarui status dan data kegiatan rehabilitasi yang menjadi tanggung jawab lapangan Anda.'],
             'petugas.monitoring' => ['camera', 'Monitoring Lapangan', 'Catat hasil pemantauan, unggah dokumentasi, dan perbarui progres kegiatan di lapangan.'],
-            'petugas.profil' => ['users', 'Profil Petugas', 'Lihat dan perbarui informasi akun serta kata sandi Anda.'],
+            'profil' => ['users', 'Pengaturan Akun', 'Lihat informasi akun Anda dan ubah kata sandi.'],
         ][$key];
 
         return [

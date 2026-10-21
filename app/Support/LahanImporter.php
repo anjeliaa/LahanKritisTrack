@@ -108,6 +108,53 @@ class LahanImporter
         ];
     }
 
+    /**
+     * Menormalkan masukan geometri manual: JSON string / array berupa Geometry, Feature, atau FeatureCollection
+     * (fitur pertama). Hanya Polygon / MultiPolygon WGS84 [bujur, lintang]. Cincin yang belum tertutup ditutup otomatis.
+     *
+     * @return array{type:string,coordinates:array}
+     */
+    public static function normalizeGeometry(mixed $input): array
+    {
+        $g = is_string($input) ? json_decode($input, true) : $input;
+
+        if (! is_array($g)) {
+            throw new InvalidArgumentException('Geometri bukan JSON yang valid.');
+        }
+        if (($g['type'] ?? null) === 'FeatureCollection') {
+            $g = $g['features'][0] ?? null;
+        }
+        if (is_array($g) && ($g['type'] ?? null) === 'Feature') {
+            $g = $g['geometry'] ?? null;
+        }
+        if (! is_array($g) || ! in_array($g['type'] ?? null, ['Polygon', 'MultiPolygon'], true) || ! is_array($g['coordinates'] ?? null)) {
+            throw new InvalidArgumentException('Geometri harus berupa Polygon atau MultiPolygon.');
+        }
+
+        self::assertCoordinates($g['coordinates'], $g['type'] === 'Polygon' ? 3 : 4);
+
+        // tutup cincin yang belum tertutup; minimal 3 titik berbeda
+        $tutup = function (array $ring) {
+            if (count($ring) < 3) {
+                throw new InvalidArgumentException('Polygon minimal memiliki 3 titik.');
+            }
+            if ($ring[0] !== $ring[count($ring) - 1]) {
+                $ring[] = $ring[0];
+            }
+            if (count($ring) < 4) {
+                throw new InvalidArgumentException('Polygon minimal memiliki 3 titik.');
+            }
+
+            return $ring;
+        };
+
+        $coords = $g['type'] === 'Polygon'
+            ? array_map($tutup, $g['coordinates'])
+            : array_map(fn ($poly) => array_map($tutup, $poly), $g['coordinates']);
+
+        return ['type' => $g['type'], 'coordinates' => $coords];
+    }
+
     public static function kecamatanId(array $props): ?int
     {
         $norm = fn ($s) => str_replace('singaran', 'singgaran', strtolower(trim((string) $s)));

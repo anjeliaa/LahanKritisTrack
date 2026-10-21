@@ -26,8 +26,19 @@
         <div class="field"><label>Penanggung Jawab / Pelaksana</label><input class="input" name="penanggung_jawab" placeholder="Kelompok Tani / CV" maxlength="255"></div>
         <div class="field"><label>Target Luas (Ha)</label><input class="input" name="target_luas" type="number" step="0.01" min="0" placeholder="mis. 12.5" required></div>
         <div class="field"><label>Tanggal Mulai</label><input class="input" name="tanggal_mulai" type="date"></div>
-        <div class="field"><label>Tanggal Selesai</label><input class="input" name="tanggal_selesai" type="date"></div>
-        <div class="field"><label>Status</label><select class="select" name="status"><option value="Rencana">Rencana</option><option value="Berjalan">Berjalan</option><option value="Selesai">Selesai</option></select></div>
+        <div class="field"><label>Target Tanggal Selesai</label><input class="input" name="tanggal_selesai" type="date"><div class="hint">Rencana batas waktu. Tanggal penyelesaian sebenarnya tercatat otomatis saat kegiatan Selesai.</div></div>
+        <div class="field"><label>Status</label><select class="select" name="status"><option value="Rencana">Rencana</option><option value="Berjalan">Berjalan</option><option value="Selesai">Selesai</option></select><div class="hint">Status mengikuti progres monitoring: berubah otomatis menjadi Berjalan saat ada progres dan Selesai saat progres 100%.</div></div>
+        @if($role === 'admin')
+        <div class="field"><label>Petugas Penanggung Jawab</label>
+            <select class="select" name="id_user">
+                <option value="">— Belum ditugaskan —</option>
+                @foreach($petugas_opts as $p)
+                <option value="{{ $p['id'] }}">{{ $p['nama'] }}</option>
+                @endforeach
+            </select>
+            <div class="hint">Petugas yang berwenang memperbarui status dan mencatat monitoring kegiatan ini.</div>
+        </div>
+        @endif
         <div class="field"><label>Publikasikan ke Tampilan Masyarakat?</label><select class="select" name="is_published"><option value="1">Ya, Publikasikan</option><option value="0">Tidak</option></select></div>
         <div class="modal-foot"><button type="submit" class="btn btn-primary"><svg class="ic"><use href="#i-save"/></svg> Simpan Data</button></div>
     </form>

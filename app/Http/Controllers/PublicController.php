@@ -16,7 +16,10 @@ class PublicController extends Controller
         $kecamatan = Catalog::kecamatanSemua();          // filter: semua kecamatan
         $jmlKecData = Catalog::kecamatan()->count();      // kecamatan yang memiliki data
 
-        $kritisHa = DataLahan::whereIn('kritis', $this->labelKritis())->sum('luas_ha');
+        // "Luas lahan kritis" tidak lagi menghitung petak yang kegiatan rehabilitasinya (yang dipublikasikan) sudah Selesai
+        $kritisHa = DataLahan::select('id_lahan', 'kritis', 'luas_ha')->denganRehabilitasi(true)->get()
+            ->filter(fn ($l) => in_array($l->kritis, $this->labelKritis(), true) && ! $l->sudah_direhabilitasi)
+            ->sum('luas_ha');
         $jmlKec = $jmlKecData;
         $target = $publik->sum('target');
         $real = $publik->sum('realisasi');
@@ -32,7 +35,7 @@ class PublicController extends Controller
             ]],
             'kecamatan'   => $kecamatan,
             'publik'      => $publik,
-            'kritis_opts' => Catalog::kritisAda(),
+            'kritis_opts' => Catalog::kritisAda(publik: true),
             'status_opts' => config('lahan.status'),
             'app'         => Catalog::app($kecamatan, $publik),
         ]);
@@ -43,7 +46,8 @@ class PublicController extends Controller
     {
         $fc = [
             'type'     => 'FeatureCollection',
-            'features' => DataLahan::orderBy('id_lahan')->get()->map->toFeature()->all(),
+            // Pengunjung publik hanya melihat dampak kegiatan yang dipublikasikan; pengguna login melihat semuanya.
+            'features' => DataLahan::denganRehabilitasi(! auth()->check())->orderBy('id_lahan')->get()->map->toFeature()->all(),
         ];
 
         $response = response()->json($fc, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
@@ -52,6 +56,7 @@ class PublicController extends Controller
         $response->setEtag(md5($response->getContent()));
         $response->setPublic();
         $response->header('Cache-Control', 'public, max-age=0, must-revalidate');
+        $response->header('Vary', 'Cookie');
         $response->isNotModified($request);
 
         return $response;

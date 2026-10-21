@@ -14,14 +14,15 @@ php artisan serve
 ```
 
 Data awal (seeder): 3 akun dan **80 petak lahan kritis** dari GeoJSON BPDAS Ketahun.
+Kata sandi awal semua akun: `lahankritis123` (ubah lewat `SEED_USER_PASSWORD` di `.env` sebelum seeding, atau lewat menu Manajemen Akun).
 
 | Username | Role |
 |---|---|
 | `anjelia.admin` | Admin |
-| `fikhri.admin` | Admin |
-| `habiby.admin` | Admin |
-| `budi.petugas` | Petugas |
+| `fikhri.petugas` | Petugas |
+| `habiby.petugas` | Petugas |
 
+Opsional, contoh kegiatan + monitoring agar semua halaman terisi: `php artisan db:seed --class=DemoDataSeeder`
 
 ### MySQL / MariaDB (XAMPP, Laragon)
 Buat database kosong `lahankritistrack`, lalu di `.env` ubah `DB_CONNECTION=mysql` dan aktifkan baris `DB_HOST` … `DB_PASSWORD`, kemudian jalankan `php artisan migrate:fresh --seed`.

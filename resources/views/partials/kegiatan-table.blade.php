@@ -18,17 +18,18 @@
     </div>
     <div class="table-wrap">
         <table class="tbl" id="tbl-kegiatan">
-            <thead><tr><th>Kegiatan</th><th>Kecamatan</th><th>Penanggung Jawab</th><th>Mulai</th><th>Selesai</th><th>Progres</th><th>Status</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>Kegiatan</th><th>Kecamatan</th><th>Penanggung Jawab</th>@if($role === 'admin')<th>Petugas</th>@endif<th>Mulai</th><th>Target Selesai</th><th>Progres</th><th>Status</th><th>Aksi</th></tr></thead>
             <tbody>
                 @foreach($kegiatan as $k)
                 <tr data-q="{{ $k['q'] }}" data-kec="{{ $k['kecamatan'] }}" data-status="{{ $k['status'] }}">
                     <td class="name" style="max-width:340px">{{ $k['nama'] }}@unless($k['published'])<small class="muted" style="display:block;font-weight:500">Belum dipublikasikan</small>@endunless</td>
                     <td>{{ $k['kecamatan'] }}<small class="muted" style="display:block">Petak #{{ $k['id_lahan'] }}</small></td>
                     <td class="muted">{{ $k['pj'] }}</td>
+                    @if($role === 'admin')<td class="muted">{{ $k['pengelola'] ?? 'Belum ditugaskan' }}</td>@endif
                     <td class="date">{{ $k['mulai'] }}</td>
                     <td class="date-end">{{ $k['selesai'] }}</td>
                     <td><div class="prog-cell"><div class="progress"><i style="width:{{ $k['progres'] }}%"></i></div><span>{{ $k['progres'] }}%</span></div></td>
-                    <td><span class="badge b-{{ $k['status_class'] }}">{{ $k['status'] }}</span></td>
+                    <td><span class="badge b-{{ $k['status_class'] }}">{{ $k['status'] }}</span>@if($k['selesai_aktual'])<small class="muted" style="display:block;font-weight:500;margin-top:3px">pada {{ $k['selesai_aktual'] }}</small>@endif</td>
                     <td>
                         <div class="acts">
                             @if($role === 'admin')
@@ -43,9 +44,9 @@
                 </tr>
                 @endforeach
                 @if($kegiatan->isEmpty())
-                <tr><td colspan="8" class="empty">Belum ada kegiatan rehabilitasi. Klik “Tambah Kegiatan” untuk memulai.</td></tr>
+                <tr><td colspan="{{ $role === 'admin' ? 9 : 8 }}" class="empty">@if($role === 'admin')Belum ada kegiatan rehabilitasi. Klik “Tambah Kegiatan” untuk memulai.@else Belum ada kegiatan yang menjadi tanggung jawab Anda. Anda dapat menambah kegiatan baru atau meminta Admin menugaskan kegiatan kepada Anda.@endif</td></tr>
                 @endif
-                <tr class="empty-row" style="display:none"><td colspan="8" class="empty">Tidak ada kegiatan yang cocok.</td></tr>
+                <tr class="empty-row" style="display:none"><td colspan="{{ $role === 'admin' ? 9 : 8 }}" class="empty">Tidak ada kegiatan yang cocok.</td></tr>
             </tbody>
         </table>
     </div>

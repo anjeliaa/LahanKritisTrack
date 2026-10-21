@@ -6,7 +6,7 @@
     </div>
     <form class="modal-body" method="POST" action="{{ route('monitoring.store') }}" enctype="multipart/form-data" data-ajax>
         @csrf
-        <div class="field"><label>Pilih Kegiatan Monitoring</label><select class="select" name="id_kegiatan" required>@foreach($kegiatan as $k)
+        <div class="field"><label>Pilih Kegiatan Monitoring</label><select class="select" name="id_kegiatan" required>@foreach($kegiatan_opsi as $k)
                     <option value="{{ $k['id'] }}">{{ $k['nama'] }}</option>
                     @endforeach</select></div>
         <div class="field"><label>Capaian Progres Lapangan (%)</label><input class="input" name="progres_persen" type="number" min="0" max="100" step="1" placeholder="mis. 75" required></div>

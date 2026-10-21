@@ -6,9 +6,9 @@
   const APP = window.APP || { kegiatan: [], kecamatan: [] };
 
   /* warna kelas kekritisan (samakan dengan variabel --tidak dst. di app.css) */
-  const COL = Object.assign({ tidak: '#22c55e', potensial: '#eab308', agak: '#f97316', kritis: '#ef4444', sangat: '#b91c1c' }, (window.APP && window.APP.warna) || {});
-  const LABEL = { tidak: 'Tidak Kritis', potensial: 'Potensial Kritis', agak: 'Agak Kritis', kritis: 'Kritis', sangat: 'Sangat Kritis' };
-  const ORDER = ['tidak', 'potensial', 'agak', 'kritis', 'sangat'];
+  const COL = Object.assign({ tidak: '#22c55e', potensial: '#eab308', agak: '#f97316', kritis: '#ef4444', sangat: '#b91c1c', pulih: '#06b6d4' }, (window.APP && window.APP.warna) || {});
+  const LABEL = { tidak: 'Tidak Kritis', potensial: 'Potensial Kritis', agak: 'Agak Kritis', kritis: 'Kritis', sangat: 'Sangat Kritis', pulih: 'Telah Direhabilitasi' };
+  const ORDER = ['tidak', 'pulih', 'potensial', 'agak', 'kritis', 'sangat'];
 
   const $ = (id) => document.getElementById(id);
   const norm = (s) => (s || '').toLowerCase();
@@ -86,7 +86,9 @@
     setPanel({
       nama: kn, kecNama: kn,
       sub: 'KECAMATAN · ' + kn.toUpperCase() + ' · PETAK #' + p.id_lahan,
-      desc: 'Petak lahan seluas <b>' + fmt(p.luas) + ' Ha</b> dengan tingkat kekritisan <b>' + p.kritis.toLowerCase() + '</b>.',
+      desc: p.rehab
+        ? 'Petak lahan seluas <b>' + fmt(p.luas) + ' Ha</b>. Kekritisan awal <b>' + esc(String(p.kritis_asli).toLowerCase()) + '</b>; kegiatan rehabilitasi telah <b>selesai' + (p.rehab_tanggal ? ' pada ' + esc(p.rehab_tanggal) : '') + '</b>, sehingga tidak lagi ditampilkan sebagai lahan kritis.'
+        : 'Petak lahan seluas <b>' + fmt(p.luas) + ' Ha</b> dengan tingkat kekritisan <b>' + esc(String(p.kritis).toLowerCase()) + '</b>.',
       badge: p.kritis, cls: p.kritis_class, luas: fmt(p.luas) + ' Ha', bpdas: 'BPDAS ' + p.bpdas,
       kg: kegPetak(p.id_lahan), kgTitle: 'Kegiatan Rehabilitasi pada Petak Ini', kgEmpty: 'Belum ada kegiatan rehabilitasi yang terdaftar pada petak ini.',
       fill: { kecamatan_id: kecId(p.kec_slug), id_lahan: p.id_lahan }
