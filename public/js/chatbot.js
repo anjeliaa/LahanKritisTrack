@@ -1,11 +1,13 @@
-/* LahanKritisTrack — widget chatbot layanan masyarakat (TAMPILAN SAJA).
-   Belum ada backend: jawaban pada tombol cepat adalah teks tetap (FAQ), pertanyaan bebas dijawab pesan placeholder.
-   Untuk menyambungkan ke layanan sungguhan, ganti isi botReply() agar memanggil API dan mengembalikan Promise<{text, links?}>. */
+/* LahanKritisTrack — widget chatbot layanan masyarakat.
+   Tombol cepat memakai FAQ tetap (tanpa AI); pertanyaan bebas dikirim ke POST /chatbot (ChatbotController → App\Support\Chatbot). */
 (function () {
   const root = document.getElementById('chatbot');
   if (!root) return;
   const $ = (id) => document.getElementById(id);
   const fab = $('cb-toggle'), panel = $('cb-panel'), body = $('cb-body'), chips = $('cb-chips'), form = $('cb-form'), input = $('cb-input');
+
+  const URL = root.dataset.endpoint, CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
+  const history = [];   /* percakapan untuk konteks AI (maks. 8 terakhir dikirim) */
 
   const WELCOME = 'Halo! Saya asisten LahanKritisTrack. Saya dapat membantu Anda memahami informasi lahan kritis dan kegiatan rehabilitasi di Kota Bengkulu. Silakan pilih pertanyaan di bawah atau tulis pertanyaan Anda.';
 
@@ -16,14 +18,39 @@
     { q: 'Kegiatan rehabilitasi', a: 'Daftar kegiatan rehabilitasi yang sudah dipublikasikan tersedia di bagian Kegiatan Rehabilitasi. Anda dapat menyaringnya dengan filter status pada peta.', links: [{ t: 'Lihat kegiatan', h: '#kegiatan' }] },
     { q: 'Hubungi petugas', a: 'Penerusan percakapan ke petugas belum tersedia. Untuk saat ini, silakan hubungi instansi terkait melalui kanal resmi mereka.' }
   ];
-  const FALLBACK = 'Terima kasih atas pertanyaannya. Asisten otomatis belum terhubung ke layanan jawaban, sehingga pertanyaan bebas belum dapat dijawab. Silakan pilih salah satu pertanyaan cepat di bawah.';
 
   const jam = () => new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
-  /* Titik sambung backend: kembalikan Promise<{ text: string, links?: [{t,h}] }> */
+  /* FAQ tetap dijawab lokal; selain itu dikirim ke backend. Mengembalikan Promise<{ text, links? }> */
   function botReply(text) {
     const hit = FAQ.find((f) => f.q.toLowerCase() === text.trim().toLowerCase());
-    return new Promise((resolve) => setTimeout(() => resolve(hit ? { text: hit.a, links: hit.links } : { text: FALLBACK }), 700));
+    if (hit) return new Promise((resolve) => setTimeout(() => resolve({ text: hit.a, links: hit.links }), 400));
+    const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 30000);
+    return fetch(URL, {
+      method: 'POST', signal: ctrl.signal,
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF || '' },
+      body: JSON.stringify({ message: text, history: history.slice(-8) })
+    }).then(async (res) => {
+      const j = await res.json().catch(() => ({}));
+      if (res.status === 429) {
+        return { text: 'Terlalu banyak pertanyaan dalam waktu singkat. Silakan coba lagi sebentar lagi.' };
+      }
+      if (res.status === 422) {
+        return { text: 'Pertanyaan tidak valid. Tulis pertanyaan singkat (maksimal 500 karakter).' };
+      }
+      
+      const answer = typeof j.reply === 'string' ? j.reply : j.text;
+      
+      if (!res.ok || typeof answer !== 'string' || !answer.trim()) {
+        return {
+          text: 'Maaf, terjadi gangguan (kode ' + res.status + ')' +
+          (j.message ? ': ' + String(j.message).slice(0, 250) : '.')
+        };
+      }
+      
+      return { text: answer };
+
+    }).finally(() => clearTimeout(timer));
   }
 
   function bubble(who, text, links) {
@@ -56,7 +83,7 @@
     busy = true;
     bubble('user', text);
     typing(true);
-    botReply(text).then((r) => { typing(false); bubble('bot', r.text, r.links); })
+    botReply(text).then((r) => { typing(false); bubble('bot', r.text, r.links); history.push({ role: 'user', text }, { role: 'bot', text: r.text }); })
       .catch(() => { typing(false); bubble('bot', 'Maaf, terjadi gangguan. Silakan coba lagi.'); })
       .finally(() => { busy = false; });
   }

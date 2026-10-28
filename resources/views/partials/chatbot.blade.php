@@ -1,6 +1,5 @@
-{{-- Widget chatbot layanan masyarakat — TAMPILAN SAJA (belum terhubung ke backend jawaban).
-     Logika ada di public/js/chatbot.js; titik sambung backend: fungsi botReply(). --}}
-<div class="cb" id="chatbot" data-chatbot>
+{{-- Widget chatbot layanan masyarakat. Logika: public/js/chatbot.js; backend: POST /chatbot (ChatbotController). --}}
+<div class="cb" id="chatbot" data-chatbot data-endpoint="{{ route('chatbot.ask') }}">
     <button type="button" class="cb-fab" id="cb-toggle" aria-label="Buka chat bantuan" aria-expanded="false" aria-controls="cb-panel">
         <span class="cb-fab-ic cb-ic-open"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg></span>
         <span class="cb-fab-ic cb-ic-close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></span>
@@ -17,7 +16,7 @@
             <button type="button" class="cb-x" data-cb-close aria-label="Tutup chat"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
         </header>
 
-        <div class="cb-note">Tampilan awal: asisten belum terhubung ke layanan jawaban otomatis.</div>
+        <div class="cb-note">Jawaban dibuat oleh AI dari data publik situs ini dan dapat keliru. Untuk urusan resmi, hubungi instansi terkait.</div>
 
         <div class="cb-body" id="cb-body" role="log" aria-live="polite" aria-label="Percakapan"></div>
 

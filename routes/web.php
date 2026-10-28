@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AkunController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\KegiatanController;
 use App\Http\Controllers\LahanController;
 use App\Http\Controllers\LaporanController;
@@ -16,6 +17,8 @@ use Illuminate\Support\Facades\Route;
 // ---------- Publik (tanpa login) ----------
 Route::get('/', [PublicController::class, 'landing'])->name('home');
 Route::get('/data/lahan.geojson', [PublicController::class, 'geojson'])->name('lahan.geojson');
+
+Route::post('/chatbot', [ChatbotController::class, 'ask'])->middleware('throttle:15,1')->name('chatbot.ask');
 
 // ---------- Autentikasi ----------
 Route::get('/login', [AuthController::class, 'show'])->name('login');

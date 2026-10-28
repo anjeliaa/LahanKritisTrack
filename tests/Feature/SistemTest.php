@@ -700,3 +700,19 @@ it('tambah petak manual: validasi isian dan hanya Admin', function () {
     // tombol & modal tampil di halaman Data Lahan
     $this->actingAs($admin)->get('/admin/lahan')->assertOk()->assertSee('Tambah Data')->assertSee('id="lahan-draw-map"', false)->assertSee('Impor GeoJSON');
 });
+
+it('chatbot menjawab pertanyaan bebas lewat penyedia AI (di-fake) dan menyembunyikan galat', function () {
+    config(['services.chatbot.provider' => 'gemini', 'services.chatbot.gemini.key' => 'kunci-uji']);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'generativelanguage.googleapis.com/*' => \Illuminate\Support\Facades\Http::response(
+            ['candidates' => [['content' => ['parts' => [['text' => 'Jawaban uji.']]]]]]
+        ),
+    ]);
+    $this->postJson('/chatbot', ['message' => 'Berapa luas lahan kritis?'])->assertOk()->assertJson(['text' => 'Jawaban uji.']);
+
+    \Illuminate\Support\Facades\Http::fake(['*' => \Illuminate\Support\Facades\Http::response('x', 500)]);
+    $this->postJson('/chatbot', ['message' => 'Halo'])->assertStatus(503)->assertDontSee('kunci-uji');
+
+    $this->postJson('/chatbot', ['message' => ''])->assertStatus(422);
+});
