@@ -1,7 +1,7 @@
 <div class="card" data-table-filter="tbl-kegiatan">
     <div class="card-head">
         <h2>Kegiatan Rehabilitasi Lahan</h2>
-        <button type="button" class="btn btn-primary" data-open="modal-kegiatan" data-title="Tambah Kegiatan Rehabilitasi Baru" data-tone="green" data-action="{{ route('kegiatan.store') }}" data-method="POST"><svg class="ic"><use href="#i-plus"/></svg> Tambah Kegiatan</button>
+        <a href="{{ route('kegiatan.create') }}" class="btn btn-primary"><svg class="ic"><use href="#i-plus"/></svg> Tambah Kegiatan</a>
     </div>
     <div class="toolbar">
         <div class="search"><svg class="ic"><use href="#i-search"/></svg><input class="input tf-q" type="search" placeholder="Cari kegiatan..."></div>
@@ -33,11 +33,11 @@
                     <td>
                         <div class="acts">
                             @if($role === 'admin')
-                            <button type="button" class="act act-ubah" data-open="modal-kegiatan" data-title="Ubah Kegiatan Rehabilitasi" data-tone="amber" data-fill="{{ $k['fill'] }}" data-action="{{ $k['url'] }}" data-method="PUT"><svg class="ic"><use href="#i-pen"/></svg> Ubah</button>
+                            <a href="{{ route('kegiatan.edit', $k['id']) }}" class="act act-ubah"><svg class="ic"><use href="#i-pen"/></svg> Ubah</a>
                             <button type="button" class="act act-hapus" data-open="modal-hapus" data-name="{{ $k['nama'] }}" data-action="{{ $k['url_destroy'] }}" data-method="DELETE"><svg class="ic"><use href="#i-trash"/></svg> Hapus</button>
                             @else
-                            <button type="button" class="act act-upd" data-open="modal-status-kegiatan" data-fill="{{ $k['fill_status'] }}"><svg class="ic"><use href="#i-refresh"/></svg> Update Status</button>
-                            <button type="button" class="act act-ubah" data-open="modal-kegiatan" data-title="Ubah Kegiatan Rehabilitasi" data-tone="amber" data-fill="{{ $k['fill'] }}" data-action="{{ $k['url'] }}" data-method="PUT"><svg class="ic"><use href="#i-pen"/></svg> Ubah</button>
+                            <a href="{{ route('kegiatan.status.edit', $k['id']) }}" class="act act-upd"><svg class="ic"><use href="#i-refresh"/></svg> Update Status</a>
+                            <a href="{{ route('kegiatan.edit', $k['id']) }}" class="act act-ubah"><svg class="ic"><use href="#i-pen"/></svg> Ubah</a>
                             @endif
                         </div>
                     </td>

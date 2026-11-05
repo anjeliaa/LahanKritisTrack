@@ -45,6 +45,16 @@ return [
     // Status TAMPILAN untuk petak yang sudah selesai direhabilitasi. Kelas kekritisan asli (data BPDAS) tidak diubah.
     'pulih' => ['label' => 'Telah Direhabilitasi'],
 
+    // Penjelasan singkat bahasa awam untuk tampilan masyarakat (klasifikasi tetap mengikuti data BPDAS)
+    'deskripsi' => [
+        'tidak'     => 'Kondisi lahan relatif baik dan terjaga.',
+        'pulih'     => 'Kegiatan rehabilitasi pada lahan ini telah selesai.',
+        'potensial' => 'Masih berfungsi, tetapi berpotensi menurun bila tidak dijaga.',
+        'agak'      => 'Fungsi lahan mulai menurun dan perlu penanganan.',
+        'kritis'    => 'Fungsi lahan telah menurun dan perlu direhabilitasi.',
+        'sangat'    => 'Fungsi lahan sangat menurun dan perlu rehabilitasi segera.',
+    ],
+
     // kelas yang dihitung sebagai "lahan kritis" (Tidak Kritis dikecualikan)
     'kritis_dihitung' => ['sangat', 'kritis', 'agak', 'potensial'],
 

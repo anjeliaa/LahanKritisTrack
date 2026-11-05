@@ -36,6 +36,7 @@ class PublicController extends Controller
             'kecamatan'   => $kecamatan,
             'publik'      => $publik,
             'kritis_opts' => Catalog::kritisAda(publik: true),
+            'kelas'       => Catalog::kelasRingkas(),
             'status_opts' => config('lahan.status'),
             'app'         => Catalog::app($kecamatan, $publik),
         ]);

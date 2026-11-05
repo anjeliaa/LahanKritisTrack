@@ -13,7 +13,7 @@
                 <div>
                     <h3>{{ $akun['nama'] }}</h3>
                     <div class="mono muted">{{ '@'.$akun['username'] }}</div>
-                    <span class="badge b-{{ $role }}" style="margin-top:6px;display:inline-block">{{ $akun['role'] }}</span>
+                    <span class="badge b-{{ $role }}" style="margin-top:8px">{{ $akun['role'] }}</span>
                 </div>
             </div>
             <div class="kv-list">
@@ -35,14 +35,22 @@
         <form class="profile-body" method="POST" action="{{ route('profil.password') }}" data-ajax autocomplete="off">
             @csrf
             @method('PUT')
-            <div class="field"><label for="password_lama">Kata Sandi Saat Ini</label>
-                <input class="input" id="password_lama" name="password_lama" type="password" autocomplete="current-password" required></div>
-            <div class="field"><label for="password_baru">Kata Sandi Baru</label>
+            <div class="field">
+                <label for="password_lama">Kata Sandi Saat Ini</label>
+                <input class="input" id="password_lama" name="password_lama" type="password" autocomplete="current-password" required>
+            </div>
+            <div class="field">
+                <label for="password_baru">Kata Sandi Baru</label>
                 <input class="input" id="password_baru" name="password_baru" type="password" minlength="8" maxlength="100" autocomplete="new-password" required>
-                <div class="hint">Minimal 8 karakter dan berbeda dari kata sandi saat ini.</div></div>
-            <div class="field"><label for="password_baru_confirmation">Konfirmasi Kata Sandi Baru</label>
-                <input class="input" id="password_baru_confirmation" name="password_baru_confirmation" type="password" minlength="8" maxlength="100" autocomplete="new-password" required></div>
-            <div class="modal-foot" style="justify-content:flex-start"><button type="submit" class="btn btn-primary"><svg class="ic"><use href="#i-save"/></svg> Simpan Kata Sandi</button></div>
+                <div class="hint">Minimal 8 karakter dan berbeda dari kata sandi saat ini.</div>
+            </div>
+            <div class="field">
+                <label for="password_baru_confirmation">Konfirmasi Kata Sandi Baru</label>
+                <input class="input" id="password_baru_confirmation" name="password_baru_confirmation" type="password" minlength="8" maxlength="100" autocomplete="new-password" required>
+            </div>
+            <div class="pf-foot">
+                <button type="submit" class="btn btn-primary"><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg> Simpan Kata Sandi</button>
+            </div>
         </form>
     </section>
 

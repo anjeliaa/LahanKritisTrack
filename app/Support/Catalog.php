@@ -92,6 +92,27 @@ class Catalog
             ->all();
     }
 
+        /** Ringkasan per kelas TAMPIL (jumlah petak & luas) untuk bagian "Cara membaca warna peta" halaman publik. */
+    public static function kelasRingkas(): array
+    {
+        $grup = DataLahan::select('id_lahan', 'kritis', 'luas_ha')
+            ->denganRehabilitasi(true)
+            ->get()
+            ->groupBy('kritis_tampil_class');
+
+        $urut = collect(array_keys(config('lahan.kritis')))
+            ->flatMap(fn ($c) => $c === 'tidak' ? ['tidak', 'pulih'] : [$c]);
+
+        return $urut->filter(fn ($c) => $grup->has($c))->map(fn ($c) => [
+            'v'     => $c,
+            'label' => $c === 'pulih' ? config('lahan.pulih.label') : config("lahan.kritis.{$c}"),
+            'warna' => config("lahan.warna.{$c}"),
+            'desc'  => config("lahan.deskripsi.{$c}"),
+            'n'     => $grup[$c]->count(),
+            'luas'  => round((float) $grup[$c]->sum('luas_ha'), 1),
+        ])->values()->all();
+    }
+
     /** Pilihan petak untuk form kegiatan (difilter berdasarkan kecamatan oleh JS). */
     public static function petak(): Collection
     {
@@ -312,3 +333,4 @@ class Catalog
         ], $extra);
     }
 }
+

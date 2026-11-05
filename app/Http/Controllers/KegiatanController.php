@@ -3,13 +3,68 @@
 namespace App\Http\Controllers;
 
 use App\Models\KegiatanRehabilitasi;
+use App\Support\Catalog;
+use App\Support\Ui;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
-class KegiatanController extends Controller
+class KegiatanController extends InternalController
 {
+    /** Halaman Tambah Kegiatan. */
+    public function create(Request $request)
+    {
+        return $this->halaman($request, 'kegiatan.form', ['item' => null]);
+    }
+
+    /** Halaman Ubah Kegiatan (Admin semua; Petugas hanya yang ia kelola). */
+    public function edit(Request $request, KegiatanRehabilitasi $kegiatan)
+    {
+        $this->pastikanBolehDikelola($request, $kegiatan);
+
+        return $this->halaman($request, 'kegiatan.form', ['item' => $kegiatan]);
+    }
+
+    /** Halaman Update Status Kegiatan. */
+    public function formStatus(Request $request, KegiatanRehabilitasi $kegiatan)
+    {
+        $this->pastikanBolehDikelola($request, $kegiatan);
+        $kegiatan->loadMissing('monitoringTerakhir');
+
+        return $this->halaman($request, 'kegiatan.status', [
+            'item'    => $kegiatan,
+            'boleh'   => $kegiatan->statusDiizinkan(),
+            'progres' => $kegiatan->progres,
+        ]);
+    }
+
+    /** Halaman konfirmasi Hapus Kegiatan (tidak dipakai lagi: Hapus kembali berupa popup). */
+    public function konfirmasiHapus(Request $request, KegiatanRehabilitasi $kegiatan)
+    {
+        $kegiatan->loadMissing('monitoringTerakhir');
+
+        $jumlahMonitoring = $kegiatan->monitoring()->count();
+        $jumlahFoto = $kegiatan->monitoring()->whereNotNull('foto_dokumentasi')->count();
+
+        return $this->halaman($request, 'shared.hapus', [
+            'item'       => $kegiatan,
+            'judul'      => 'Hapus Kegiatan Rehabilitasi',
+            'path'       => 'Kegiatan Rehabilitasi',
+            'desc'       => 'Periksa data di bawah sebelum menghapus.',
+            'nama'       => $kegiatan->nama_kegiatan,
+            'peringatan' => 'Kegiatan beserta seluruh riwayat monitoringnya akan dihapus permanen dan tidak dapat dikembalikan.',
+            'action'     => route('kegiatan.destroy', $kegiatan),
+            'batal'      => route('admin.kegiatan'),
+            'detail'     => [
+                'Status'                     => $kegiatan->status,
+                'Progres terakhir'           => $kegiatan->progres . '%',
+                'Catatan monitoring dihapus' => $jumlahMonitoring,
+                'Foto dokumentasi dihapus'   => $jumlahFoto,
+            ],
+        ]);
+    }
+
     public function store(Request $request)
     {
         $data = $this->validated($request);
@@ -30,7 +85,7 @@ class KegiatanController extends Controller
 
         KegiatanRehabilitasi::create($data);
 
-        return $this->ok($request, 'Kegiatan rehabilitasi disimpan.');
+        return $this->kembaliKeDaftar($request, 'Kegiatan rehabilitasi disimpan.');
     }
 
     public function update(Request $request, KegiatanRehabilitasi $kegiatan)
@@ -56,10 +111,10 @@ class KegiatanController extends Controller
             $kegiatan->update(['tanggal_selesai' => $kegiatan->tanggal_status ?? today()]);
         }
 
-        return $this->ok($request, 'Perubahan kegiatan disimpan.');
+        return $this->kembaliKeDaftar($request, 'Perubahan kegiatan disimpan.');
     }
 
-    /** Modal "Update Status Kegiatan". */
+    /** Simpan Update Status Kegiatan. */
     public function status(Request $request)
     {
         $data = $request->validate([
@@ -75,7 +130,7 @@ class KegiatanController extends Controller
             $kegiatan->terapkanStatus($data['status']);
         }
 
-        return $this->ok($request, 'Status kegiatan diperbarui.');
+        return $this->kembaliKeDaftar($request, 'Status kegiatan diperbarui.');
     }
 
     public function destroy(Request $request, KegiatanRehabilitasi $kegiatan)
@@ -86,7 +141,39 @@ class KegiatanController extends Controller
 
         Storage::disk('public')->delete($foto->all());
 
+        // Hapus lewat popup (AJAX) -> ok() mengalihkan kembali ke halaman sebelumnya
         return $this->ok($request, 'Kegiatan beserta riwayat monitoringnya dihapus.');
+    }
+
+    /** Menyusun halaman dengan kerangka internal (sidebar, header) untuk Admin maupun Petugas. */
+    private function halaman(Request $request, string $view, array $extra = [])
+    {
+        $user = $request->user();
+        $this->role = $user->isAdmin() ? 'admin' : 'petugas';
+
+        $kegiatan = $user->isAdmin() ? Catalog::kegiatan() : Catalog::kegiatan(userId: $user->id_user);
+        [$total, $berjalan, $selesai, $rencana] = $this->hitungStatus($kegiatan);
+
+        $ringkas = isset($extra['item'])
+            ? $kegiatan->firstWhere('id', $extra['item']->getKey())
+            : null;
+
+        return $this->render($view, 'kegiatan', $this->role . '.kegiatan', [
+            Ui::tile('Total Kegiatan', $total, 'Program', 'white'),
+            Ui::tile('Berjalan', $berjalan, 'Aktif', 'green'),
+            Ui::tile('Selesai', $selesai, 'Tuntas', 'blue'),
+            Ui::tile('Rencana', $rencana, 'Menunggu', 'amber'),
+        ], ['kegiatan' => $kegiatan, 'ringkas' => $ringkas] + $extra);
+    }
+
+    /** Setelah simpan: kembali ke daftar kegiatan. */
+    private function kembaliKeDaftar(Request $request, string $pesan)
+    {
+        $request->session()->flash('success', $pesan);
+
+        return $request->expectsJson()
+            ? response()->json(['message' => $pesan])
+            : redirect()->route($request->user()->isAdmin() ? 'admin.kegiatan' : 'petugas.kegiatan');
     }
 
     private function pastikanBolehDikelola(Request $request, KegiatanRehabilitasi $kegiatan): void

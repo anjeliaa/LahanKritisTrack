@@ -3,15 +3,50 @@
 namespace App\Http\Controllers;
 
 use App\Models\DataLahan;
+use App\Support\Catalog;
+use App\Support\Fmt;
 use App\Support\LahanImporter;
+use App\Support\Ui;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
-class LahanController extends Controller
+class LahanController extends InternalController
 {
+    /** Halaman Tambah Petak (gambar polygon pada peta atau tempel GeoJSON). */
+    public function create()
+    {
+        return $this->halaman('lahan.form', ['item' => null]);
+    }
+
+    /** Halaman Ubah Petak. */
+    public function edit(DataLahan $lahan)
+    {
+        return $this->halaman('lahan.form', ['item' => $lahan]);
+    }
+
+    /** Halaman Impor GeoJSON. */
+    public function formImpor()
+    {
+        return $this->halaman('lahan.import');
+    }
+
+    /** Halaman Detail Petak beserta kegiatan rehabilitasi di dalamnya. */
+    public function show(DataLahan $lahan)
+    {
+        $row = Catalog::lahanRow(DataLahan::denganRehabilitasi()->findOrFail($lahan->getKey()));
+        $kegiatan = Catalog::kegiatan();
+
+        return $this->halaman('lahan.show', [
+            'item'           => $lahan,
+            'row'            => $row,
+            'kegiatan'       => $kegiatan,
+            'kegiatan_lahan' => $kegiatan->where('id_lahan', $lahan->getKey())->values(),
+        ]);
+    }
+
     /** Tambah petak lahan secara manual (gambar polygon pada peta atau tempel GeoJSON). */
     public function store(Request $request)
     {
@@ -43,7 +78,7 @@ class LahanController extends Controller
             'geometri'     => $geom,
         ]);
 
-        return $this->ok($request, "Petak lahan #{$lahan->id_lahan} ditambahkan.");
+        return $this->kembaliKeDaftar($request, "Petak lahan #{$lahan->id_lahan} ditambahkan.");
     }
 
     public function update(Request $request, DataLahan $lahan)
@@ -60,7 +95,7 @@ class LahanController extends Controller
 
         $lahan->update($data);
 
-        return $this->ok($request, "Data petak lahan #{$lahan->id_lahan} diperbarui.");
+        return $this->kembaliKeDaftar($request, "Data petak lahan #{$lahan->id_lahan} diperbarui.");
     }
 
     public function destroy(Request $request, DataLahan $lahan)
@@ -75,6 +110,7 @@ class LahanController extends Controller
 
         $lahan->delete();
 
+        // Hapus lewat popup (AJAX)
         return $this->ok($request, "Petak lahan #{$lahan->id_lahan} dihapus.");
     }
 
@@ -105,6 +141,35 @@ class LahanController extends Controller
             $request->session()->flash('error', "{$r['skipped']} fitur dilewati. ".implode(' ', array_slice($r['errors'], 0, 2)));
         }
 
-        return $this->ok($request, "Impor selesai: {$r['created']} petak ditambahkan, {$r['updated']} diperbarui.");
+        return $this->kembaliKeDaftar($request, "Impor selesai: {$r['created']} petak ditambahkan, {$r['updated']} diperbarui.");
+    }
+
+    /** Menyusun halaman dengan kerangka internal (khusus Admin, dijaga oleh route). */
+    private function halaman(string $view, array $extra = [])
+    {
+        $this->role = 'admin';
+
+        $semua = DataLahan::all(['id_lahan', 'kecamatan_id', 'kritis', 'luas_ha']);
+        $kritisTinggi = $semua->whereIn('kritis', [config('lahan.kritis.kritis'), config('lahan.kritis.sangat')])->count();
+
+        return $this->render($view, 'lahan', 'admin.lahan', [
+            Ui::tile('Petak Lahan', $semua->count(), $semua->pluck('kecamatan_id')->unique()->count().' kecamatan', 'white'),
+            Ui::tile('Total Luas', Fmt::ha($semua->sum('luas_ha')), 'Hektare', 'amber'),
+            Ui::tile('Kritis', $kritisTinggi, 'Petak (kritis & sangat kritis)', 'red'),
+            Ui::tile('Potensial', $semua->where('kritis', config('lahan.kritis.potensial'))->count(), 'Petak', 'green'),
+        ], $extra + [
+            'kegiatan'        => collect(),
+            'kecamatan_semua' => collect(config('lahan.kecamatan'))->map(fn ($k, $id) => ['id' => $id] + $k)->values(),
+        ]);
+    }
+
+    /** Setelah simpan: kembali ke daftar data lahan. */
+    private function kembaliKeDaftar(Request $request, string $pesan)
+    {
+        $request->session()->flash('success', $pesan);
+
+        return $request->expectsJson()
+            ? response()->json(['message' => $pesan])
+            : redirect()->route('admin.lahan');
     }
 }

@@ -23,19 +23,31 @@
                 <h3 style="font-size:12px" id="kec-kegiatan-title">Kegiatan Rehabilitasi</h3>
                 <div class="mini-list" id="kec-kegiatan"></div>
             </div>
-            <button type="button" id="btn-add-here" class="btn btn-primary btn-block" style="padding:12px" data-open="modal-kegiatan" data-title="Tambah Kegiatan Rehabilitasi Baru" data-tone="green" data-action="{{ route('kegiatan.store') }}" data-method="POST"><svg class="ic"><use href="#i-plus"/></svg> Tambah kegiatan di sini</button>
+
+            {{-- Membuka halaman Tambah Kegiatan; petak yang dipilih di peta ikut terisi (data-fill diisi oleh map.js) --}}
+            <a href="{{ route('kegiatan.create') }}" id="btn-add-here" class="btn btn-primary btn-block" style="padding:12px" data-base="{{ route('kegiatan.create') }}"><svg class="ic"><use href="#i-plus"/></svg> Tambah kegiatan di sini</a>
+
             @include('partials.map-result-list')
         </div>
     </div>
 </div>
 @endsection
 
-@section('modals')
-@include('partials.modals.kegiatan')
-@endsection
-
 @push('scripts')
 <script>window.APP = @json($app);</script>
 <script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
 <script src="{{ asset('js/map.js') }}"></script>
+<script>
+(function () {
+    var a = document.getElementById('btn-add-here');
+    if (!a) return;
+    a.addEventListener('click', function (e) {
+        e.preventDefault();
+        var f = {};
+        try { f = JSON.parse(a.dataset.fill || '{}'); } catch (err) { f = {}; }
+        var id = f.id_lahan || f.lahan || '';
+        window.location.href = a.dataset.base + (id ? '?lahan=' + encodeURIComponent(id) : '');
+    });
+})();
+</script>
 @endpush

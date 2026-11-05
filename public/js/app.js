@@ -1,17 +1,12 @@
-/* LahanKritisTrack — interaksi umum (tema, modal, toast, filter tabel) */
+/* LahanKritisTrack — interaksi umum (modal, toast, filter tabel) */
 (function () {
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const ICON_OK = '<svg class="ic"><use href="#i-checkc"/></svg>';
 
-  /* ---------- tema (terang/gelap) ---------- */
-  const saved = localStorage.getItem('lk-theme');
-  if (saved) document.documentElement.dataset.theme = saved;
-  function toggleTheme() {
-    const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-    document.documentElement.dataset.theme = next;
-    localStorage.setItem('lk-theme', next);
-  }
+  /* ---------- tampilan tetap terang ---------- */
+  document.documentElement.dataset.theme = 'light';
+  localStorage.removeItem('lk-theme');
 
   /* ---------- toast ---------- */
   window.toast = function (msg, err) {
@@ -160,7 +155,6 @@
 
   document.addEventListener('click', function (e) {
     const t = e.target;
-    if (t.closest('[data-theme-toggle]')) return toggleTheme();
     const op = t.closest('[data-open]');
     if (op) { e.preventDefault(); return openModal(op.dataset.open, op); }
     if (t.closest('[data-close]')) return closeModal(t.closest('.modal-backdrop'));

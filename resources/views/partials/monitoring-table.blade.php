@@ -1,12 +1,10 @@
-{{-- Satu baris per KEGIATAN: menampilkan monitoring terbaru. Riwayat lengkap dibuka lewat tombol Detail. --}}
+{{-- Satu baris per KEGIATAN: menampilkan monitoring terbaru. Riwayat lengkap ada di halaman Detail. --}}
 <div class="card">
     <div class="card-head">
         <h2>Monitoring Lapangan per Kegiatan</h2>
 
         @if($role === 'petugas')
-        <button type="button" class="btn btn-primary" data-open="modal-monitoring" data-title="Catat Laporan Monitoring Lapangan" data-tone="green" data-action="{{ route('monitoring.store') }}" data-method="POST">
-            <svg class="ic"><use href="#i-plus"/></svg> Catat Monitoring
-        </button>
+        <a href="{{ route('monitoring.create') }}" class="btn btn-primary"><svg class="ic"><use href="#i-plus"/></svg> Catat Monitoring</a>
         @endif
     </div>
 
@@ -28,6 +26,13 @@
 
             <tbody>
                 @foreach($monitoring_ringkas as $m)
+                @php
+                    // id kegiatan: dari data isian progres, cadangannya dicocokkan lewat nama + petak
+                    $fp = $m['fill_progres'] ?? null;
+                    $fp = is_array($fp) ? $fp : (json_decode((string) $fp, true) ?: []);
+                    $idKegiatan = $fp['id_kegiatan']
+                        ?? ($kegiatan->first(fn ($k) => $k['nama'] === $m['kegiatan'] && (string) $k['id_lahan'] === (string) $m['id_lahan'])['id'] ?? null);
+                @endphp
                 <tr>
                     <td>
                         @if($m['foto'])
@@ -65,22 +70,19 @@
 
                     <td>
                         <div class="acts">
-                            <button type="button" class="act act-detail"
-                                data-open="modal-riwayat"
-                                data-name="{{ $m['kegiatan'] }}"
-                                data-sub="{{ $m['lokasi'] }} · Petak #{{ $m['id_lahan'] }}"
-                                data-riwayat="{{ $m['riwayat'] }}">
+                            @if($idKegiatan)
+                            <a href="{{ route('monitoring.riwayat', $idKegiatan) }}" class="act act-detail">
                                 <svg class="ic"><use href="#i-eye"/></svg> Detail
-                            </button>
+                            </a>
+                            @endif
 
                             @if($role === 'admin')
                                 {{-- Ubah / Hapus bekerja pada catatan monitoring TERBARU; catatan lama ada di Detail --}}
-                                <button type="button" class="act act-ubah"
-                                    data-open="modal-monitoring" data-title="Ubah Laporan Monitoring Terbaru" data-tone="amber"
-                                    data-fill="{{ $m['fill'] }}" data-action="{{ $m['url'] }}" data-method="PUT">
+                                <a href="{{ $m['url'] }}/ubah" class="act act-ubah">
                                     <svg class="ic"><use href="#i-pen"/></svg> Ubah
-                                </button>
+                                </a>
 
+                                {{-- Hapus tetap popup --}}
                                 <button type="button" class="act act-hapus"
                                     data-open="modal-hapus"
                                     data-name="Catatan monitoring terbaru {{ $m['kegiatan'] }} ({{ $m['tanggal'] }})"
@@ -88,17 +90,14 @@
                                     <svg class="ic"><use href="#i-trash"/></svg> Hapus
                                 </button>
                             @else
-                                <button type="button" class="act act-upd"
-                                    data-open="modal-status-progres" data-fill="{{ $m['fill_progres'] }}">
+                                <a href="{{ route('monitoring.create', array_filter(['kegiatan' => $idKegiatan])) }}" class="act act-upd">
                                     <svg class="ic"><use href="#i-refresh"/></svg> Update Status
-                                </button>
+                                </a>
 
                                 @if($m['can_edit'])
-                                    <button type="button" class="act act-ubah"
-                                        data-open="modal-monitoring" data-title="Ubah Laporan Monitoring Terbaru" data-tone="amber"
-                                        data-fill="{{ $m['fill'] }}" data-action="{{ $m['url'] }}" data-method="PUT">
+                                    <a href="{{ $m['url'] }}/ubah" class="act act-ubah">
                                         <svg class="ic"><use href="#i-pen"/></svg> Ubah
-                                    </button>
+                                    </a>
                                 @endif
                             @endif
                         </div>

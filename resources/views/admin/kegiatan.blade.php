@@ -6,7 +6,5 @@
 @endsection
 
 @section('modals')
-@include('partials.modals.kegiatan')
 @include('partials.modals.hapus')
-@include('partials.modals.status-kegiatan')
 @endsection

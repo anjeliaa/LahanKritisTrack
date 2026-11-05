@@ -1,14 +1,14 @@
 {{-- Widget chatbot layanan masyarakat. Logika: public/js/chatbot.js; backend: POST /chatbot (ChatbotController). --}}
-<div class="cb" id="chatbot" data-chatbot data-endpoint="{{ route('chatbot.ask') }}">
+<div class="cb" id="chatbot" data-chatbot data-endpoint="{{ route('chatbot.ask') }}" data-avatar="{{ asset('img/chatbot-avatar.png') }}">
     <button type="button" class="cb-fab" id="cb-toggle" aria-label="Buka chat bantuan" aria-expanded="false" aria-controls="cb-panel">
-        <span class="cb-fab-ic cb-ic-open"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg></span>
+        <span class="cb-fab-ic cb-ic-open"><img src="{{ asset('img/chatbot-avatar.png') }}" alt="" width="44" height="44"></span>
         <span class="cb-fab-ic cb-ic-close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></span>
         <span class="cb-fab-tip">Butuh bantuan?</span>
     </button>
 
     <section class="cb-panel" id="cb-panel" role="dialog" aria-label="Chat bantuan LahanKritisTrack" hidden>
         <header class="cb-head">
-            <span class="cb-avatar"><svg class="ic" aria-hidden="true"><use href="#i-leaf"/></svg></span>
+            <span class="cb-avatar"><img src="{{ asset('img/chatbot-avatar.png') }}" alt="" width="44" height="44"></span>
             <div class="cb-title">
                 <b>Asisten LahanKritis</b>
                 <small>Layanan informasi untuk masyarakat</small>

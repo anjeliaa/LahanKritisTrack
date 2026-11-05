@@ -37,12 +37,18 @@ Route::middleware(EnsureRole::class . ':admin')
 
         // ---------- Akun ----------
         Route::get('/akun', [AdminController::class, 'akun'])->name('akun');
+        Route::get('/akun/tambah', [AkunController::class, 'create'])->name('akun.create');
+        Route::get('/akun/{user}/ubah', [AkunController::class, 'edit'])->name('akun.edit');
         Route::post('/akun', [AkunController::class, 'store'])->name('akun.store');
         Route::put('/akun/{user}', [AkunController::class, 'update'])->name('akun.update');
         Route::delete('/akun/{user}', [AkunController::class, 'destroy'])->name('akun.destroy');
 
-        // ---------- Data Lahan ----------
+        // ---------- Data Lahan (rute statis di atas {lahan}) ----------
         Route::get('/lahan', [AdminController::class, 'lahan'])->name('lahan');
+        Route::get('/lahan/tambah', [LahanController::class, 'create'])->name('lahan.create');
+        Route::get('/lahan/impor', [LahanController::class, 'formImpor'])->name('lahan.impor');
+        Route::get('/lahan/{lahan}/ubah', [LahanController::class, 'edit'])->name('lahan.edit');
+        Route::get('/lahan/{lahan}', [LahanController::class, 'show'])->name('lahan.show');
         Route::post('/lahan', [LahanController::class, 'store'])->name('lahan.store');
         Route::post('/lahan/import', [LahanController::class, 'import'])->name('lahan.import');
         Route::put('/lahan/{lahan}', [LahanController::class, 'update'])->name('lahan.update');
@@ -78,23 +84,32 @@ Route::middleware(EnsureRole::class . ':admin,petugas')->group(function () {
 // ---------- Kegiatan rehabilitasi (Admin & Petugas; Petugas hanya yang ia kelola) ----------
 Route::middleware(EnsureRole::class . ':admin,petugas')->group(function () {
 
+    Route::get('/kegiatan/tambah', [KegiatanController::class, 'create'])->name('kegiatan.create');
+    Route::get('/kegiatan/{kegiatan}/ubah', [KegiatanController::class, 'edit'])->name('kegiatan.edit');
+    Route::get('/kegiatan/{kegiatan}/status', [KegiatanController::class, 'formStatus'])->name('kegiatan.status.edit');
     Route::post('/kegiatan', [KegiatanController::class, 'store'])->name('kegiatan.store');
     Route::post('/kegiatan/status', [KegiatanController::class, 'status'])->name('kegiatan.status');
     Route::put('/kegiatan/{kegiatan}', [KegiatanController::class, 'update'])->name('kegiatan.update');
 
+    // Riwayat monitoring per kegiatan
+    Route::get('/monitoring/riwayat/{kegiatan}', [MonitoringController::class, 'riwayat'])->name('monitoring.riwayat');
+
     // Ubah monitoring: Admin semua, Petugas hanya miliknya (dicek di controller)
+    Route::get('/monitoring/{monitoring}/ubah', [MonitoringController::class, 'edit'])->name('monitoring.edit');
     Route::put('/monitoring/{monitoring}', [MonitoringController::class, 'update'])->name('monitoring.update');
 });
 
 // ---------- Catat monitoring: khusus Petugas (Admin hanya meninjau, mengubah, dan menghapus) ----------
 Route::middleware(EnsureRole::class . ':petugas')->group(function () {
 
+    Route::get('/monitoring/catat', [MonitoringController::class, 'create'])->name('monitoring.create');
     Route::post('/monitoring', [MonitoringController::class, 'store'])->name('monitoring.store');
 });
 
 // ---------- Hapus data: khusus Admin ----------
 Route::middleware(EnsureRole::class . ':admin')->group(function () {
 
+    Route::get('/kegiatan/{kegiatan}/hapus', [KegiatanController::class, 'konfirmasiHapus'])->name('kegiatan.hapus');
     Route::delete('/kegiatan/{kegiatan}', [KegiatanController::class, 'destroy'])->name('kegiatan.destroy');
     Route::delete('/monitoring/{monitoring}', [MonitoringController::class, 'destroy'])->name('monitoring.destroy');
 });

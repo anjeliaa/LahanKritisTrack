@@ -6,8 +6,8 @@
     <div class="card-head">
         <h2>Data Petak Lahan Kritis</h2>
         <div class="acts">
-            <button type="button" class="btn btn-outline" data-open="modal-import"><svg class="ic"><use href="#i-upload"/></svg> Impor GeoJSON</button>
-            <button type="button" class="btn btn-primary" data-open="modal-lahan-tambah"><svg class="ic"><use href="#i-plus"/></svg> Tambah Data</button>
+            <a href="{{ route('admin.lahan.impor') }}" class="btn btn-outline"><svg class="ic"><use href="#i-upload"/></svg> Impor GeoJSON</a>
+            <a href="{{ route('admin.lahan.create') }}" class="btn btn-primary"><svg class="ic"><use href="#i-plus"/></svg> Tambah Data</a>
         </div>
     </div>
     <div class="toolbar">
@@ -35,8 +35,9 @@
                     <td><span class="badge b-{{ $k['kritis_class'] }}">{{ $k['kritis'] }}</span>@if($k['rehab'])<small class="muted" style="display:block;margin-top:3px"><span class="badge b-pulih">Telah Direhabilitasi</span>@if($k['rehab_tanggal']) {{ $k['rehab_tanggal'] }}@endif</small>@endif</td>
                     <td class="num">{{ $k['luas_fmt'] }} Ha</td>
                     <td><div class="acts">
-                        <button type="button" class="act act-detail" data-open="modal-detail" data-detail="{{ $k['detail'] }}"><svg class="ic"><use href="#i-eye"/></svg> Detail</button>
-                        <button type="button" class="act act-ubah" data-open="modal-lahan" data-title="Ubah Data Petak #{{ $k['id'] }}" data-tone="amber" data-fill="{{ $k['fill'] }}" data-action="{{ $k['url'] }}" data-method="PUT"><svg class="ic"><use href="#i-pen"/></svg> Ubah</button>
+                        <a href="{{ route('admin.lahan.show', $k['id']) }}" class="act act-detail"><svg class="ic"><use href="#i-eye"/></svg> Detail</a>
+                        <a href="{{ route('admin.lahan.edit', $k['id']) }}" class="act act-ubah"><svg class="ic"><use href="#i-pen"/></svg> Ubah</a>
+                        {{-- Hapus tetap popup --}}
                         <button type="button" class="act act-hapus" data-open="modal-hapus" data-name="Petak lahan #{{ $k['id'] }} ({{ $k['kecamatan'] }})" data-action="{{ $k['url_destroy'] }}" data-method="DELETE"><svg class="ic"><use href="#i-trash"/></svg> Hapus</button>
                     </div></td>
                 </tr>
@@ -52,15 +53,9 @@
 @endsection
 
 @section('modals')
-@include('partials.modals.detail-lahan')
-@include('partials.modals.import')
-@include('partials.modals.lahan-tambah')
-@include('partials.modals.lahan')
 @include('partials.modals.hapus')
 @endsection
 
 @push('scripts')
 <script>window.APP = @json($app);</script>
-<script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
-<script src="{{ asset('js/lahan-form.js') }}"></script>
 @endpush

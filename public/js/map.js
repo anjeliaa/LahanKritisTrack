@@ -30,6 +30,10 @@
   let selKec = null;    /* kecamatan yang dipilih dari daftar hasil */
   let allBounds = null;
 
+  /* ---------- animasi zoom ---------- */
+  const REDUCE = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); /* hormati pengaturan "kurangi gerakan" */
+  let introDone = false, pendingScroll = false, scrollTimer = null, introObserver = null;
+
   /* polygon: terisi warna kelas + garis tepi tipis gelap; yang tidak cocok filter dibuat pudar */
   const FILL_ON = 0.8, FILL_OFF = 0.1, FILL_HOVER = 0.92;
 
@@ -174,6 +178,50 @@
     else if (fit && ok.length) map.fitBounds(L.featureGroup(ok).getBounds().pad(0.2), { maxZoom: 14 });
   }
 
+  /* area yang sedang menjadi fokus: hasil filter bila ada, selain itu seluruh petak */
+  function focusBounds() {
+    const ok = Object.values(layers).filter((l) => l.feature._ok !== false);
+    if (hasFilter() && ok.length) return L.featureGroup(ok).getBounds().pad(0.2);
+    return allBounds ? allBounds.pad(0.05) : null;
+  }
+  /* terbang halus ke suatu area (tanpa animasi bila pengguna memilih "kurangi gerakan") */
+  function animateTo(bounds, opt) {
+    if (!bounds) return;
+    if (REDUCE) map.fitBounds(bounds, Object.assign({ animate: false }, opt));
+    else map.flyToBounds(bounds, Object.assign({ duration: 1.4 }, opt));
+  }
+  /* tampilan awal "jauh" sebelum animasi masuk dimulai */
+  function prepareIntro() {
+    const b = focusBounds();
+    if (!b || REDUCE) return;
+    map.setView(b.getCenter(), Math.max(map.getBoundsZoom(b) - 3, 6), { animate: false });
+  }
+  /* animasi masuk: dari tampilan jauh, zoom perlahan ke area fokus */
+  function playIntro() {
+    const b = focusBounds();
+    if (!b) return;
+    introDone = true;
+    map.invalidateSize();
+    prepareIntro();
+    animateTo(b, { duration: 2.2, maxZoom: 14 });
+  }
+  /* mulai animasi saat peta terlihat di layar (di halaman publik peta berada jauh di bawah) */
+  function startIntroWhenVisible() {
+    const r = el.getBoundingClientRect(), vh = window.innerHeight || document.documentElement.clientHeight;
+    if (r.top < vh * 0.7 && r.bottom > vh * 0.3) { setTimeout(playIntro, 250); return; }
+    if (!('IntersectionObserver' in window)) { playIntro(); return; }
+    introObserver = new IntersectionObserver((es) => {
+      if (es.some((e) => e.isIntersecting) && !introDone && !pendingScroll) { introObserver.disconnect(); setTimeout(playIntro, 150); }
+    }, { threshold: 0.35 });
+    introObserver.observe(el);
+  }
+  /* zoom ke petak yang diklik + denyut singkat pada garis tepinya */
+  function zoomToPetak(lyr) {
+    animateTo(lyr.getBounds().pad(0.8), { maxZoom: 17, duration: 1.1 });
+    const p = lyr.getElement && lyr.getElement();
+    if (p) { p.classList.remove('petak-pulse'); void p.getBoundingClientRect(); p.classList.add('petak-pulse'); }
+  }
+
   /* ---------- muat polygon ---------- */
   fetch(el.dataset.geojson).then((r) => r.json()).then(function (gj) {
     const present = {};
@@ -186,14 +234,14 @@
         const nk_ = kegPetak(f.properties.id_lahan).length;
         lyr.bindTooltip(esc(kecName(f.properties.kec_slug, f.properties.kecamatan)) + ' · Petak #' + f.properties.id_lahan + ' · ' + esc(f.properties.kritis) + ' · ' + fmt(f.properties.luas) + ' Ha' + (nk_ ? ' · ' + nk_ + ' kegiatan' : ''), { sticky: true, className: 'kec-label' });
         lyr.on({
-          click: () => selectLayer(lyr),
+          click: () => { selectLayer(lyr); zoomToPetak(lyr); },
           mouseover: () => { if (selLayer !== lyr && f._ok !== false) lyr.setStyle({ fillOpacity: FILL_HOVER }); },
           mouseout: () => { if (selLayer !== lyr) lyr.setStyle({ fillOpacity: f._ok === false ? FILL_OFF : FILL_ON }); }
         });
       }
     }).addTo(map);
     allBounds = L.featureGroup(Object.values(layers)).getBounds();
-    map.fitBounds(allBounds.pad(0.05));
+    map.fitBounds(allBounds.pad(0.05), { animate: false });
 
     /* legenda (pojok kanan bawah): hanya kelas yang ada di data */
     const legend = L.control({ position: 'bottomright' });
@@ -208,6 +256,10 @@
     /* kosongkan filter (browser kadang mengembalikan isian lama) dan jangan pilih apa pun otomatis */
     FILTER_IDS.forEach((id) => { const i = $(id); if (i) i.value = ''; });
     apply(false);
+
+    /* animasi masuk: mulai dari tampilan jauh, lalu zoom ke area petak saat peta terlihat */
+    prepareIntro();
+    startIntroWhenVisible();
   });
 
   FILTER_IDS.forEach((id) => { const i = $(id); if (i) i.addEventListener('input', () => { clearSelection(); apply(true); }); });
@@ -216,8 +268,17 @@
     const r = e.target.closest('.result-item'); if (!r) return;
     showKec(r.dataset.slug);
     const ls = Object.values(layers).filter((l) => l.feature.properties.kec_slug === r.dataset.slug && l.feature._ok !== false);
-    if (ls.length) map.fitBounds(L.featureGroup(ls).getBounds().pad(0.3), { maxZoom: 14 });
+    if (ls.length) animateTo(L.featureGroup(ls).getBounds().pad(0.3), { maxZoom: 14, duration: 1.2 });
   });
-  const sc = document.querySelectorAll('[data-scroll-map]'); sc.forEach((a) => a.addEventListener('click', () => setTimeout(() => map.invalidateSize(), 400)));
-  window.addEventListener('load', () => setTimeout(() => { map.invalidateSize(); if (allBounds) map.fitBounds(allBounds.pad(0.05)); }, 200));
+  /* tombol/tautan yang mengarah ke peta: setelah halaman bergulir ke peta, ulangi animasi zoom */
+  document.querySelectorAll('[data-scroll-map]').forEach((a) => a.addEventListener('click', () => {
+    pendingScroll = true;
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(() => {
+      pendingScroll = false;
+      if (introObserver) introObserver.disconnect();
+      if (allBounds) playIntro();
+    }, 650);
+  }));
+  window.addEventListener('load', () => setTimeout(() => map.invalidateSize(), 200));
 })();

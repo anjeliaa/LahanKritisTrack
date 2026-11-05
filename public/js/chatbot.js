@@ -7,6 +7,7 @@
   const fab = $('cb-toggle'), panel = $('cb-panel'), body = $('cb-body'), chips = $('cb-chips'), form = $('cb-form'), input = $('cb-input');
 
   const URL = root.dataset.endpoint, CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
+  const AVATAR = root.dataset.avatar;
   const history = [];   /* percakapan untuk konteks AI (maks. 8 terakhir dikirim) */
 
   const WELCOME = 'Halo! Saya asisten LahanKritisTrack. Saya dapat membantu Anda memahami informasi lahan kritis dan kegiatan rehabilitasi di Kota Bengkulu. Silakan pilih pertanyaan di bawah atau tulis pertanyaan Anda.';
@@ -20,6 +21,12 @@
   ];
 
   const jam = () => new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+  function avatarEl() {
+    const img = document.createElement('img');
+    img.className = 'cb-mini'; img.src = AVATAR; img.alt = ''; img.width = 32; img.height = 32;
+    return img;
+  }
 
   /* FAQ tetap dijawab lokal; selain itu dikirim ke backend. Mengembalikan Promise<{ text, links? }> */
   function botReply(text) {
@@ -38,16 +45,16 @@
       if (res.status === 422) {
         return { text: 'Pertanyaan tidak valid. Tulis pertanyaan singkat (maksimal 500 karakter).' };
       }
-      
+
       const answer = typeof j.reply === 'string' ? j.reply : j.text;
-      
+
       if (!res.ok || typeof answer !== 'string' || !answer.trim()) {
         return {
           text: 'Maaf, terjadi gangguan (kode ' + res.status + ')' +
           (j.message ? ': ' + String(j.message).slice(0, 250) : '.')
         };
       }
-      
+
       return { text: answer };
 
     }).finally(() => clearTimeout(timer));
@@ -63,6 +70,7 @@
       b.appendChild(l);
     }
     const t = document.createElement('time'); t.textContent = jam(); b.appendChild(t);
+    if (who === 'bot') row.appendChild(avatarEl());
     row.appendChild(b); body.appendChild(row);
     body.scrollTop = body.scrollHeight;
     return row;
@@ -73,7 +81,11 @@
     const old = $('cb-typing'); if (old) old.remove();
     if (!on) return;
     const row = document.createElement('div'); row.className = 'cb-row bot'; row.id = 'cb-typing';
-    row.innerHTML = '<div class="cb-bubble cb-typing" aria-label="Asisten sedang mengetik"><i></i><i></i><i></i></div>';
+    row.appendChild(avatarEl());
+    const b = document.createElement('div'); b.className = 'cb-bubble cb-typing';
+    b.setAttribute('aria-label', 'Asisten sedang mengetik');
+    b.innerHTML = '<i></i><i></i><i></i>';
+    row.appendChild(b);
     body.appendChild(row); body.scrollTop = body.scrollHeight;
   }
 

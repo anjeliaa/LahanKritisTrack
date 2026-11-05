@@ -7,47 +7,82 @@
     <title>@yield('title', 'LahanKritisTrack')</title>
     <link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/shell.css') }}">
 </head>
-<body>
+<body class="shell">
 @include('partials.icons')
-<header class="int-header">
-    <div class="wrap">
-        <a href="{{ route($tabs[0]['route']) }}" class="logo sm">
-            <span class="logo-mark"><span>L<svg class="ic"><use href="#i-leaf"/></svg></span></span>
-            <span>
-                <span class="logo-name" style="display:block">LahanKritis<b>Track</b></span>
-                <span class="logo-sub" style="display:block">Internal System</span>
-            </span>
-        </a>
-        <div class="int-right">
-            <button type="button" class="icon-btn" data-theme-toggle aria-label="Ganti tema"><svg class="ic"><use href="#i-moon"/></svg></button>
-            <a href="{{ route('profil') }}" class="profile-btn {{ $active === 'profil' ? 'active' : '' }}" title="Pengaturan akun — {{ auth()->user()->nama }} ({{ $role === 'admin' ? 'Admin' : 'Petugas' }})" aria-label="Pengaturan akun {{ auth()->user()->nama }}, {{ $role === 'admin' ? 'Admin' : 'Petugas' }}"><svg class="ic" aria-hidden="true"><use href="#i-user"/></svg></a>
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit" class="btn btn-red-soft" style="padding:6px 12px;border-radius:8px"><svg class="ic"><use href="#i-logout"/></svg> Keluar</button>
-            </form>
-        </div>
-    </div>
-</header>
+@php
+    $u = auth()->user();
+    $jam = now('Asia/Jakarta')->hour;
+    $sapa = $jam < 11 ? 'Selamat pagi' : ($jam < 15 ? 'Selamat siang' : ($jam < 18 ? 'Selamat sore' : 'Selamat malam'));
+    $roleLabel = $role === 'admin' ? 'Admin' : 'Petugas';
+    $inisial = mb_strtoupper(mb_substr($u->nama, 0, 1));
+@endphp
 
-<nav class="int-tabs no-print">
-    <div class="wrap">
+<aside class="sb no-print" aria-label="Navigasi utama">
+    <a href="{{ route($tabs[0]['route']) }}" class="sb-brand">
+        <span class="sb-mark"><b>L</b><svg class="ic" aria-hidden="true"><use href="#i-leaf"/></svg></span>
+        <span>
+            <span class="sb-name">LahanKritis<i>Track</i></span>
+            <span class="sb-sub">Internal System</span>
+        </span>
+    </a>
+
+    <div class="sb-label">Menu</div>
+    <nav class="sb-nav">
         @foreach($tabs as $t)
-        <a href="{{ route($t['route']) }}" class="{{ $t['key'] === $active ? 'active' : '' }}"><svg class="ic"><use href="#i-{{ $t['icon'] }}"/></svg>{{ $t['label'] }}</a>
+        <a href="{{ route($t['route']) }}" class="{{ $t['key'] === $active ? 'active' : '' }}">
+            <svg class="ic" aria-hidden="true"><use href="#i-{{ $t['icon'] }}"/></svg>{{ $t['label'] }}
+        </a>
         @endforeach
-    </div>
-</nav>
+    </nav>
 
-<main class="int-main">
-    <div class="wrap">
-        @include('partials.page-header')
-        @yield('content')
+    <div class="sb-foot">
+        <a href="{{ route('profil') }}" class="sb-user {{ $active === 'profil' ? 'active' : '' }}" title="Pengaturan akun">
+            <span class="sb-av" aria-hidden="true">{{ $inisial }}</span>
+            <span><b>{{ $u->nama }}</b><small>{{ $roleLabel }} · Pengaturan akun</small></span>
+        </a>
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" class="sb-out"><svg class="ic" aria-hidden="true"><use href="#i-logout"/></svg> Keluar</button>
+        </form>
     </div>
-</main>
+</aside>
+<div class="sb-backdrop" data-sb-toggle></div>
+
+<div class="sb-main">
+    <header class="tb no-print">
+        <div class="tb-left">
+            <button type="button" class="tb-burger" data-sb-toggle aria-label="Buka menu"><svg class="ic"><use href="#i-bars"/></svg></button>
+            <div class="tb-hello">{{ $sapa }},<b>{{ $u->nama }}</b></div>
+        </div>
+        <div class="tb-right">
+            <span class="tb-pill"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg>{{ now('Asia/Jakarta')->locale('id')->translatedFormat('l, j F Y') }}</span>
+            <span class="tb-role">{{ $roleLabel }}</span>
+        </div>
+    </header>
+
+    <main class="int-main">
+        <div class="wrap">
+            @hasSection('page_header')
+                @yield('page_header')
+            @else
+                @include('partials.page-header')
+            @endif
+            @yield('content')
+        </div>
+    </main>
+</div>
 
 @yield('modals')
 <div id="toast-root"></div>
 <script src="{{ asset('js/app.js') }}"></script>
+<script>
+document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-sb-toggle]')) document.body.classList.toggle('sb-open');
+    else if (document.body.classList.contains('sb-open') && !e.target.closest('.sb')) document.body.classList.remove('sb-open');
+});
+</script>
 @if(session('success') || session('error'))
 <script>@if(session('success')) toast(@json(session('success'))); @endif @if(session('error')) toast(@json(session('error')), true); @endif</script>
 @endif

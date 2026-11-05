@@ -3,12 +3,25 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\Ui;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
-class AkunController extends Controller
+class AkunController extends InternalController
 {
+    /** Halaman Tambah Akun. */
+    public function create()
+    {
+        return $this->halaman('akun.form', ['item' => null]);
+    }
+
+    /** Halaman Ubah Akun. */
+    public function edit(User $user)
+    {
+        return $this->halaman('akun.form', ['item' => $user]);
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -20,7 +33,7 @@ class AkunController extends Controller
 
         User::create($data);
 
-        return $this->ok($request, 'Akun pengguna disimpan.');
+        return $this->kembaliKeDaftar($request, 'Akun pengguna disimpan.');
     }
 
     public function update(Request $request, User $user)
@@ -43,7 +56,7 @@ class AkunController extends Controller
 
         $user->update($data);
 
-        return $this->ok($request, 'Akun pengguna diperbarui.');
+        return $this->kembaliKeDaftar($request, 'Akun pengguna diperbarui.');
     }
 
     public function destroy(Request $request, User $user)
@@ -55,6 +68,31 @@ class AkunController extends Controller
         // kegiatan & monitoring yang pernah dicatat tetap tersimpan (id_user menjadi kosong)
         $user->delete();
 
+        // Hapus lewat popup (AJAX)
         return $this->ok($request, 'Akun pengguna dihapus.');
+    }
+
+    /** Menyusun halaman dengan kerangka internal (khusus Admin, dijaga oleh route). */
+    private function halaman(string $view, array $extra)
+    {
+        $this->role = 'admin';
+
+        $users = User::all();
+
+        return $this->render($view, 'akun', 'admin.akun', [
+            Ui::tile('Total Akun', $users->count(), 'Terdaftar', 'white'),
+            Ui::tile('Admin', $users->where('role', 'admin')->count(), 'Akses penuh', 'amber'),
+            Ui::tile('Petugas', $users->where('role', 'petugas')->count(), 'Lapangan', 'green'),
+        ], $extra + ['kegiatan' => collect()]);
+    }
+
+    /** Setelah simpan: kembali ke daftar akun. */
+    private function kembaliKeDaftar(Request $request, string $pesan)
+    {
+        $request->session()->flash('success', $pesan);
+
+        return $request->expectsJson()
+            ? response()->json(['message' => $pesan])
+            : redirect()->route('admin.akun');
     }
 }
