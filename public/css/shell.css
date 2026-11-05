@@ -406,3 +406,11 @@ body.shell .stat{border-radius:20px;box-shadow:0 1px 2px rgba(12,58,43,.06),0 10
 
 /* cetak: pita & kartu tidak ikut tercetak */
 @media print{.hb-util,.hb-stats,.hb-hang{display:none!important}}
+
+/* tombol "Kembali ke daftar" tidak menabrak tanggal & role di pojok kanan atas pita */
+body.shell .page-header > .btn{align-self:flex-end;margin-top:44px;flex:none}
+
+/* layar sempit: pita menjadi satu kolom, tombol di bawah teks */
+@media (max-width:1280px){
+  body.shell .page-header > .btn{align-self:flex-start;margin-top:4px}
+}
