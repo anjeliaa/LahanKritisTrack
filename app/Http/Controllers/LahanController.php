@@ -114,7 +114,7 @@ class LahanController extends InternalController
         return $this->ok($request, "Petak lahan #{$lahan->id_lahan} dihapus.");
     }
 
-    /** Impor GeoJSON: petak dengan OBJECTID yang sama diperbarui, sisanya ditambahkan. */
+    /** Impor GeoJSON: petak dengan id_lahan yang sama diperbarui, sisanya ditambahkan. */
     public function import(Request $request)
     {
         $request->validate([
@@ -151,11 +151,14 @@ class LahanController extends InternalController
 
         $semua = DataLahan::all(['id_lahan', 'kecamatan_id', 'kritis', 'luas_ha']);
         $kritisTinggi = $semua->whereIn('kritis', [config('lahan.kritis.kritis'), config('lahan.kritis.sangat')])->count();
+        // Label menyesuaikan data: sebut "sangat kritis" hanya bila memang ada petak berkelas itu.
+        $adaSangat = $semua->where('kritis', config('lahan.kritis.sangat'))->isNotEmpty();
+        $labelKritis = $adaSangat ? 'Petak (kritis & sangat kritis)' : 'Petak kritis';
 
         return $this->render($view, 'lahan', 'admin.lahan', [
             Ui::tile('Petak Lahan', $semua->count(), $semua->pluck('kecamatan_id')->unique()->count().' kecamatan', 'white'),
             Ui::tile('Total Luas', Fmt::ha($semua->sum('luas_ha')), 'Hektare', 'amber'),
-            Ui::tile('Kritis', $kritisTinggi, 'Petak (kritis & sangat kritis)', 'red'),
+            Ui::tile('Kritis', $kritisTinggi, $labelKritis, 'red'),
             Ui::tile('Potensial', $semua->where('kritis', config('lahan.kritis.potensial'))->count(), 'Petak', 'green'),
         ], $extra + [
             'kegiatan'        => collect(),

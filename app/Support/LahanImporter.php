@@ -9,7 +9,9 @@ use InvalidArgumentException;
  * Mengimpor FeatureCollection GeoJSON (Polygon / MultiPolygon) ke tabel data_lahan.
  *
  * Atribut dikenali tanpa membedakan huruf besar/kecil:
- *   objectid | id_lahan | id   -> data_lahan.objectid (kunci upsert bila ada)
+ *   id_lahan | id                -> data_lahan.id_lahan (kunci upsert; unik per petak)
+ *   objectid                     -> data_lahan.objectid (hanya arsip ID sumber; BOLEH kembar karena satu
+ *                                   poligon sumber bisa terpotong batas kecamatan menjadi beberapa petak)
  *   kritis | kritis_class       -> tingkat kekritisan
  *   kecamatan | kec_slug        -> kecamatan_id
  *   luas | luas_ha              -> luas_ha (dihitung dari geometri bila tidak ada)
@@ -49,7 +51,7 @@ class LahanImporter
             }
 
             if ($key !== null) {
-                $model = DataLahan::updateOrCreate(['objectid' => $key], $attrs);
+                $model = DataLahan::updateOrCreate(['id_lahan' => $key], $attrs);
                 $model->wasRecentlyCreated ? $r['created']++ : $r['updated']++;
             } else {
                 DataLahan::create($attrs);
@@ -92,11 +94,15 @@ class LahanImporter
         $luas = $p['luas'] ?? $p['luas_ha'] ?? null;
         $luas = is_numeric($luas) ? round((float) $luas, 2) : round(self::areaHa($geom), 2);
 
-        $key = $p['objectid'] ?? $p['id_lahan'] ?? $p['id'] ?? null;
+        // Kunci upsert = id_lahan (unik per petak). objectid sumber TIDAK dipakai sebagai kunci,
+        // sebab bisa sama untuk beberapa petak hasil pemotongan per kecamatan.
+        $key = $p['id_lahan'] ?? $p['id'] ?? null;
+        $oid = $p['objectid'] ?? null;
 
         return [
             is_numeric($key) ? (int) $key : null,
             [
+                'objectid'     => is_numeric($oid) ? (int) $oid : null,
                 'wilayah'      => ($p['wilayah'] ?? null) ?: 'Kota Bengkulu',
                 'kecamatan_id' => $kecId,
                 'kecamatan'    => config("lahan.kecamatan.{$kecId}.nama"),

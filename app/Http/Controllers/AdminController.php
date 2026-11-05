@@ -127,11 +127,13 @@ class AdminController extends InternalController
         $lahan = DataLahan::denganRehabilitasi()->orderBy('kecamatan')->orderBy('id_lahan')->get();
         $kegiatan = Catalog::kegiatan();
         $kritisTinggi = $lahan->whereIn('kritis', [config('lahan.kritis.kritis'), config('lahan.kritis.sangat')])->count();
+        // Label menyesuaikan data: sebut "sangat kritis" hanya bila memang ada petak berkelas itu.
+        $labelKritis = $lahan->where('kritis', config('lahan.kritis.sangat'))->isNotEmpty() ? 'Petak (kritis & sangat kritis)' : 'Petak kritis';
 
         return $this->render('admin.lahan', 'lahan', 'admin.lahan', [
             Ui::tile('Petak Lahan', $lahan->count(), $lahan->pluck('kecamatan_id')->unique()->count().' kecamatan', 'white'),
             Ui::tile('Total Luas', Fmt::ha($lahan->sum('luas_ha')), 'Hektare', 'amber'),
-            Ui::tile('Kritis', $kritisTinggi, 'Petak (kritis & sangat kritis)', 'red'),
+            Ui::tile('Kritis', $kritisTinggi, $labelKritis, 'red'),
             Ui::tile('Potensial', $lahan->where('kritis', config('lahan.kritis.potensial'))->count(), 'Petak', 'green'),
         ], [
             'lahan'    => $lahan->map(fn ($l) => Catalog::lahanRow($l)),
