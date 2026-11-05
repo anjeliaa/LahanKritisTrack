@@ -13,8 +13,6 @@
 @include('partials.icons')
 @php
     $u = auth()->user();
-    $jam = now('Asia/Jakarta')->hour;
-    $sapa = $jam < 11 ? 'Selamat pagi' : ($jam < 15 ? 'Selamat siang' : ($jam < 18 ? 'Selamat sore' : 'Selamat malam'));
     $roleLabel = $role === 'admin' ? 'Admin' : 'Petugas';
     $inisial = mb_strtoupper(mb_substr($u->nama, 0, 1));
 @endphp
@@ -51,19 +49,18 @@
 <div class="sb-backdrop" data-sb-toggle></div>
 
 <div class="sb-main">
-    <header class="tb no-print">
-        <div class="tb-left">
-            <button type="button" class="tb-burger" data-sb-toggle aria-label="Buka menu"><svg class="ic"><use href="#i-bars"/></svg></button>
-            <div class="tb-hello">{{ $sapa }},<b>{{ $u->nama }}</b></div>
-        </div>
-        <div class="tb-right">
-            <span class="tb-pill"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg>{{ now('Asia/Jakarta')->locale('id')->translatedFormat('l, j F Y') }}</span>
-            <span class="tb-role">{{ $roleLabel }}</span>
-        </div>
-    </header>
-
     <main class="int-main">
         <div class="wrap">
+
+            {{-- tombol menu (HP), tanggal & role: melayang di pojok pita hijau --}}
+            <div class="hb-util no-print">
+                <button type="button" class="hb-burger" data-sb-toggle aria-label="Buka menu"><svg class="ic"><use href="#i-bars"/></svg></button>
+                <div class="hb-right">
+                    <span class="hb-pill"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg>{{ now('Asia/Jakarta')->locale('id')->translatedFormat('l, j F Y') }}</span>
+                    <span class="hb-role">{{ $roleLabel }}</span>
+                </div>
+            </div>
+
             @hasSection('page_header')
                 @yield('page_header')
             @else

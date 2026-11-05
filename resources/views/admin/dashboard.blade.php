@@ -1,9 +1,23 @@
 @extends('layouts.internal')
 @section('title', 'Dashboard — LahanKritisTrack')
 
-@section('content')
+@php
+    $nama = auth()->user()->nama;
+    $jam  = now('Asia/Jakarta')->hour;
+    $sapa = $jam < 11 ? 'Selamat pagi' : ($jam < 15 ? 'Selamat siang' : ($jam < 18 ? 'Selamat sore' : 'Selamat malam'));
+@endphp
 
-<section class="stat-grid">
+{{-- pita sapaan + empat kartu ringkasan yang menggantung di tepi bawahnya --}}
+@section('page_header')
+<section class="page-header hero-lg has-stats">
+    <div class="ph-hello">
+        <span>{{ $sapa }},</span>
+        <h1>{{ $nama }}</h1>
+        <p>Berikut ringkasan program rehabilitasi lahan kritis hari ini.</p>
+    </div>
+</section>
+
+<section class="stat-grid hb-hang">
     @foreach($dash['kpi'] as $k)
     <div class="card stat">
         <div class="stat-top">
@@ -15,7 +29,9 @@
     </div>
     @endforeach
 </section>
+@endsection
 
+@section('content')
 <section class="dash-grid">
     <div class="card">
         <div class="card-head">
