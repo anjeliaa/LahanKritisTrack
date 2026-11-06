@@ -414,3 +414,5 @@ body.shell .page-header > .btn{align-self:flex-end;margin-top:44px;flex:none}
 @media (max-width:1280px){
   body.shell .page-header > .btn{align-self:flex-start;margin-top:4px}
 }
+
+.stat-ico.white{background:var(--cream);color:var(--text2)}
