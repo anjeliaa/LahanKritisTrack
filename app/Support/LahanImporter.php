@@ -9,9 +9,14 @@ use InvalidArgumentException;
  * Mengimpor FeatureCollection GeoJSON (Polygon / MultiPolygon) ke tabel data_lahan.
  *
  * Atribut dikenali tanpa membedakan huruf besar/kecil:
- *   id_lahan | id                -> data_lahan.id_lahan (kunci upsert; unik per petak)
- *   objectid                     -> data_lahan.objectid (hanya arsip ID sumber; BOLEH kembar karena satu
- *                                   poligon sumber bisa terpotong batas kecamatan menjadi beberapa petak)
+ *   objectid                     -> data_lahan.objectid (ID poligon sumber; BOLEH kembar karena satu poligon sumber
+ *                                   bisa terpotong batas kecamatan menjadi beberapa petak)
+ *   id_lahan | id                -> hanya dipakai sebagai kunci cadangan bila berkas TIDAK memuat objectid.
+ *                                   Nomor ini tidak dipercaya untuk berkas olahan baru, sebab urutannya bisa
+ *                                   berbeda dari nomor petak yang sudah ada di database.
+ *
+ * Kunci upsert: pasangan (objectid, kecamatan). Pasangan ini unik pada hasil Intersection per kecamatan, jadi
+ * impor ulang memperbarui petak yang sama dan tidak menggandakannya, tanpa menukar petak yang sudah punya kegiatan.
  *   kritis | kritis_class       -> tingkat kekritisan
  *   kecamatan | kec_slug        -> kecamatan_id
  *   luas | luas_ha              -> luas_ha (dihitung dari geometri bila tidak ada)
@@ -51,7 +56,7 @@ class LahanImporter
             }
 
             if ($key !== null) {
-                $model = DataLahan::updateOrCreate(['id_lahan' => $key], $attrs);
+                $model = DataLahan::updateOrCreate($key, $attrs);
                 $model->wasRecentlyCreated ? $r['created']++ : $r['updated']++;
             } else {
                 DataLahan::create($attrs);
@@ -62,7 +67,7 @@ class LahanImporter
         return $r;
     }
 
-    /** @return array{0:?int,1:array<string,mixed>} */
+    /** @return array{0:?array<string,int>,1:array<string,mixed>} [kunci upsert atau null, atribut] */
     private static function parse(mixed $feature): array
     {
         if (! is_array($feature) || ($feature['type'] ?? null) !== 'Feature') {
@@ -94,15 +99,21 @@ class LahanImporter
         $luas = $p['luas'] ?? $p['luas_ha'] ?? null;
         $luas = is_numeric($luas) ? round((float) $luas, 2) : round(self::areaHa($geom), 2);
 
-        // Kunci upsert = id_lahan (unik per petak). objectid sumber TIDAK dipakai sebagai kunci,
-        // sebab bisa sama untuk beberapa petak hasil pemotongan per kecamatan.
-        $key = $p['id_lahan'] ?? $p['id'] ?? null;
-        $oid = $p['objectid'] ?? null;
+        // Kunci upsert = (objectid, kecamatan_id): objectid saja bisa kembar (poligon terpotong batas kecamatan),
+        // tetapi pasangannya dengan kecamatan unik. id_lahan hanya cadangan bila berkas tidak memuat objectid.
+        $oid = is_numeric($p['objectid'] ?? null) ? (int) $p['objectid'] : null;
+        $idl = $p['id_lahan'] ?? $p['id'] ?? null;
+
+        $key = match (true) {
+            $oid !== null     => ['objectid' => $oid, 'kecamatan_id' => $kecId],
+            is_numeric($idl)  => ['id_lahan' => (int) $idl],
+            default           => null,
+        };
 
         return [
-            is_numeric($key) ? (int) $key : null,
+            $key,
             [
-                'objectid'     => is_numeric($oid) ? (int) $oid : null,
+                ...($oid !== null ? ['objectid' => $oid] : []),
                 'wilayah'      => ($p['wilayah'] ?? null) ?: 'Kota Bengkulu',
                 'kecamatan_id' => $kecId,
                 'kecamatan'    => config("lahan.kecamatan.{$kecId}.nama"),

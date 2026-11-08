@@ -38,4 +38,17 @@ class Monitoring extends Model
     {
         return $this->foto_dokumentasi ? Storage::disk('public')->url($this->foto_dokumentasi) : null;
     }
+
+    /** Nilai yang tampil ke pengguna (label => teks), dipakai membandingkan sebelum/sesudah Admin mengubah. */
+    public function jejak(): array
+    {
+        return [
+            'Kegiatan'           => KegiatanRehabilitasi::whereKey($this->id_kegiatan)->value('nama_kegiatan') ?? '-',
+            'Tanggal monitoring' => $this->tanggal_monitoring?->locale('id')->translatedFormat('j F Y') ?? '-',
+            'Progres'            => $this->progres_persen.'%',
+            'Kondisi lahan'      => (string) $this->kondisi_lahan,
+            'Catatan'            => trim((string) $this->catatan) !== '' ? trim((string) $this->catatan) : '-',
+            'Foto dokumentasi'   => $this->foto_dokumentasi ? basename($this->foto_dokumentasi) : '-',
+        ];
+    }
 }

@@ -31,7 +31,7 @@ class DemoDataSeeder extends Seeder
              'mon' => ['2026-02-10', 65, 'Membaik', 'Penanaman 1.200 bibit mahoni selesai. Tingkat kelangsungan hidup 82%.']],
             ['kec' => 1, 'nama' => 'Program Agroforestry Tanaman Buah Rakyat', 'jenis' => 'Agroforestry', 'pj' => 'Kelompok Tani Sejahtera', 'target' => 18.0, 'mulai' => '2025-12-20', 'selesai' => '2026-05-20', 'status' => 'Selesai', 'pub' => true, 'user' => $habiby,
              'mon' => ['2026-05-20', 100, 'Membaik', 'Seluruh target tanaman alpukat & durian telah tumbuh stabil.']],
-            // Teluk Segara belum punya petak pada data spasial, sehingga contoh ini ditempatkan di Gading Cempaka.
+            // Contoh sosialisasi ditempatkan di Gading Cempaka.
             ['kec' => 3, 'nama' => 'Sosialisasi Konservasi Lahan Kritis Sempadan', 'jenis' => 'Sosialisasi', 'pj' => 'Dinas LHK Kota Bengkulu', 'target' => 8.0, 'mulai' => '2026-04-15', 'selesai' => '2026-05-30', 'status' => 'Rencana', 'pub' => false, 'user' => $fikhri,
              'mon' => null],
         ];

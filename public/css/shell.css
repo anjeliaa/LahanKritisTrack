@@ -416,3 +416,112 @@ body.shell .page-header > .btn{align-self:flex-end;margin-top:44px;flex:none}
 }
 
 .stat-ico.white{background:var(--cream);color:var(--text2)}
+
+/* ---------- pemberitahuan perubahan dari Admin (khusus Petugas) ---------- */
+.sb-badge{margin-left:auto;min-width:20px;padding:0 7px;border-radius:999px;background:#f5b638;color:var(--forest);font:800 11px/20px var(--font);text-align:center;flex:none}
+.sb-nav a.active .sb-badge{background:var(--forest);color:#fff}
+
+.pa{background:#fbf0d9;border:1px solid #f0dca6;border-radius:20px;box-shadow:var(--shadow);padding:18px 22px}
+.pa-lama{background:#fff;border-color:var(--line)}
+.pa-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pa-head h3{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:#7a4a08}
+.pa-head h3 .ic{font-size:16px;color:#a8690b}
+.pa-list{list-style:none;margin:10px 0 0;padding:0}
+.pa-item{padding:12px 0;border-top:1px solid rgba(168,105,11,.18)}
+.pa-lama .pa-item{border-top-color:var(--line2)}
+.pa-item:first-child{border-top:0;padding-top:4px}
+.pa-item>b{display:block;font-size:13px;color:var(--ink)}
+.pa-meta{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.pa-lines{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--text2);line-height:1.5}
+.pa-lines li{display:flex;gap:8px}
+.pa-lines li::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--leaf);margin-top:7px;flex:none}
+.pa-lama summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--forest2)}
+.pa-lama summary::-webkit-details-marker{display:none}
+.pa-lama summary .ic{font-size:14px;transition:transform .15s}
+.pa-lama details[open] summary .ic{transform:rotate(90deg)}
+@media (max-width:1024px){.pa{padding:14px 16px;border-radius:16px}}
+@media print{.pa{display:none!important}}
+
+/* ---------- logo pada kop laporan: sama dengan logo sidebar (huruf L + daun) ---------- */
+body.shell .kop .seal{position:relative;border:1.5px solid var(--leaf);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body.shell .kop .seal b{position:absolute;left:15px;top:7px;font:700 33px/1 var(--display);color:#fff}
+body.shell .kop .seal .ic{position:absolute;right:9px;bottom:9px;width:20px;height:20px;color:#34d27b}
+
+/* ================= Penyegaran tampilan form (form internal, popup, dan profil) ================= */
+body.shell{--ring:0 0 0 4px rgba(31,143,90,.14);--line-input:#d6d3c2}
+
+/* ---- kartu & bagian form ---- */
+body.shell .form-card{border-radius:22px;box-shadow:0 1px 2px rgba(12,58,43,.04),0 10px 28px -14px rgba(12,58,43,.14)}
+body.shell .form-card{counter-reset:fsec}
+@media (min-width:901px){body.shell .form-sec{grid-template-columns:280px minmax(0,1fr);gap:40px;padding:30px 34px}}
+@media (max-width:900px){body.shell .form-sec{padding:22px 20px}}
+body.shell .form-sec-head h2{display:flex;align-items:center;gap:10px;font:600 16px/1.3 var(--display);letter-spacing:-.01em;margin-bottom:8px}
+body.shell .form-sec-head h2::before{counter-increment:fsec;content:counter(fsec);flex:none;width:26px;height:26px;border-radius:9px;background:var(--leaf-soft);color:var(--forest2);font:800 12px/26px var(--font);text-align:center}
+body.shell .form-sec-head p{padding-left:36px;font-size:12.5px}
+body.shell .form-grid{gap:20px}
+body.shell .form-alert{margin:24px 34px 0;border-left:4px solid #c8372d;border-radius:12px;padding:13px 16px}
+body.shell .form-foot{padding:18px 34px;gap:12px}
+body.shell .form-foot .btn{padding:11px 22px;font-size:13px;border-radius:13px}
+body.shell .form-foot .btn-outline{background:#fff;border:1.5px solid #cfcbb8}
+body.shell .form-foot .btn-primary{box-shadow:0 8px 18px -8px rgba(12,58,43,.55)}
+@media (max-width:900px){body.shell .form-alert{margin:18px 20px 0}body.shell .form-foot{padding:16px 20px}}
+
+/* ---- label & kolom isian ---- */
+body.shell :is(.form-card,.modal,.profile-grid) .field{gap:7px}
+body.shell :is(.form-card,.modal,.profile-grid) .field>label{font-size:12.5px;font-weight:700;color:var(--ink);letter-spacing:.01em}
+body.shell :is(.form-card,.modal,.profile-grid) .field:has(:is(input,select,textarea):required)>label::after{content:" *";color:#d9483b}
+body.shell :is(.form-card,.modal,.profile-grid) .input,
+body.shell :is(.form-card,.modal,.profile-grid) .select{padding:12px 14px;font-size:13px;font-weight:500;color:var(--ink);background:#fff;border:1.5px solid var(--line-input);border-radius:13px;transition:border-color .15s,box-shadow .15s,background .15s}
+body.shell :is(.form-card,.modal,.profile-grid) .select{padding-right:40px}
+body.shell :is(.form-card,.modal,.profile-grid) .input:hover,
+body.shell :is(.form-card,.modal,.profile-grid) .select:hover{border-color:#b7c7bc}
+body.shell :is(.form-card,.modal,.profile-grid) .input:focus,
+body.shell :is(.form-card,.modal,.profile-grid) .select:focus{border-color:var(--leaf);box-shadow:var(--ring);background:#fff}
+body.shell :is(.form-card,.modal,.profile-grid) .input::placeholder{color:#9aa59f;font-weight:400}
+body.shell :is(.form-card,.modal,.profile-grid) .input:disabled,
+body.shell :is(.form-card,.modal,.profile-grid) .input[readonly],
+body.shell :is(.form-card,.modal,.profile-grid) .select:disabled{background:#efede1;color:var(--muted);cursor:not-allowed}
+body.shell :is(.form-card,.modal,.profile-grid) textarea.input{min-height:130px;line-height:1.65}
+body.shell :is(.form-card,.modal,.profile-grid) .hint{font-size:11.5px;color:var(--muted);margin-top:2px}
+
+/* ---- galat ---- */
+body.shell :is(.form-card,.modal,.profile-grid) .input.err,
+body.shell :is(.form-card,.modal,.profile-grid) .select.err{border-color:#e0554a!important;background:#fff8f7;box-shadow:0 0 0 4px rgba(224,85,74,.10)}
+body.shell :is(.form-card,.modal,.profile-grid) .field-err{display:flex;align-items:flex-start;gap:7px;margin-top:2px;font-size:12px;font-weight:600;color:#c8372d;line-height:1.45}
+body.shell :is(.form-card,.modal,.profile-grid) .field-err::before{content:"!";flex:none;width:15px;height:15px;margin-top:1px;border-radius:50%;background:#c8372d;color:#fff;font:800 10px/15px var(--font);text-align:center}
+
+/* ---- unggah berkas & pratinjau foto ---- */
+body.shell :is(.form-card,.modal,.profile-grid) input[type=file].input{padding:12px;border:1.5px dashed #a9c4b3;background:#f6fbf7;cursor:pointer}
+body.shell :is(.form-card,.modal,.profile-grid) input[type=file].input:hover{border-color:var(--leaf);background:var(--leaf-soft)}
+body.shell :is(.form-card,.modal,.profile-grid) input[type=file].input::file-selector-button{margin-right:12px;padding:8px 14px;border:0;border-radius:10px;background:var(--forest);color:#fff;font:700 12px var(--font);cursor:pointer;transition:background .15s}
+body.shell :is(.form-card,.modal,.profile-grid) input[type=file].input::file-selector-button:hover{background:var(--forest2)}
+body.shell .foto-box{padding:12px;border:1px solid var(--line);border-radius:16px;background:var(--soft);margin-bottom:12px}
+body.shell .foto-box img{width:120px;height:90px;border-radius:12px}
+
+/* ---- slider progres ---- */
+body.shell .range-row{gap:16px}
+body.shell .range-row input[type=range]{-webkit-appearance:none;appearance:none;height:8px;border-radius:999px;background:#e1e8de;outline:0;accent-color:var(--leaf)}
+body.shell .range-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid var(--leaf);box-shadow:0 2px 6px rgba(12,58,43,.25);cursor:pointer}
+body.shell .range-row input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--leaf);box-shadow:0 2px 6px rgba(12,58,43,.25);cursor:pointer}
+body.shell .range-row input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 5px rgba(31,143,90,.22)}
+body.shell .range-val{min-width:58px;padding:6px 12px;border-radius:999px;background:var(--leaf-soft);color:var(--forest2);font:800 13px var(--mono);text-align:center}
+
+/* ---- kartu pilihan (role akun, status kegiatan) ---- */
+body.shell .opt-body{position:relative;padding-right:46px;border-width:1.5px;border-color:var(--line-input)}
+body.shell .opt-body::after{content:"";position:absolute;top:15px;right:15px;width:18px;height:18px;border-radius:50%;border:2px solid #c3c7b8;background:#fff;transition:.15s}
+body.shell .opt input:checked + .opt-body{box-shadow:0 0 0 3px rgba(31,143,90,.12)}
+body.shell .opt input:checked + .opt-body::after{border-color:var(--leaf);background:radial-gradient(circle,#fff 0 34%,var(--leaf) 40%)}
+body.shell .opt.off .opt-body::after{border-color:#dcdccf;background:#f3f2e8}
+
+/* ---- area unggah GeoJSON ---- */
+body.shell .dropzone{padding:34px 24px;border:2px dashed #9fcfb2;background:#f4faf6;border-radius:18px;transition:.15s}
+body.shell .dropzone:hover,body.shell .dropzone.drag{border-color:var(--leaf);background:var(--leaf-soft)}
+body.shell .dropzone .big{width:56px;height:56px;font-size:26px;background:#fff;color:var(--leaf);box-shadow:0 4px 12px -4px rgba(12,58,43,.25)}
+
+/* ---- HP: cegah iOS memperbesar layar saat mengetik ---- */
+@media (max-width:560px){
+  body.shell :is(.form-card,.modal,.profile-grid) .input,body.shell :is(.form-card,.modal,.profile-grid) .select{font-size:16px}
+}
+
+/* bilah tombol di bawah form: putih seperti isi kartu */
+body.shell .form-foot{background:#fff;border-top:1px solid var(--line2)}

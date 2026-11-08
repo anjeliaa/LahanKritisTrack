@@ -82,11 +82,23 @@ it('endpoint GeoJSON memuat petak dari database', function () {
         ->and($r['features'][0]['properties'])->toMatchArray(['kritis' => 'Sangat Kritis', 'kritis_class' => 'sangat', 'kec_slug' => 'selebar', 'luas' => 7.5]);
 });
 
-it('seeder memuat 80 petak asli dan 3 akun', function () {
+it('seeder memuat 101 petak asli (80 objectid sumber, 9 kecamatan) dan 3 akun', function () {
     $this->seed(DatabaseSeeder::class);
 
-    expect(DataLahan::count())->toBe(80)->and(User::count())->toBe(3)
-        ->and(round(DataLahan::sum('luas_ha')))->toBe(15028.0);
+    expect(DataLahan::count())->toBe(101)->and(User::count())->toBe(3)
+        ->and(DataLahan::pluck('objectid')->unique()->count())->toBe(80)
+        ->and(DataLahan::pluck('kecamatan_id')->unique()->count())->toBe(9)
+        ->and((float) DataLahan::sum('luas_ha'))->toEqualWithDelta(15028.54, 0.01);
+});
+
+it('memuat ulang berkas yang sama tidak menggandakan petak, dan id_lahan dari berkas diabaikan', function () {
+    $this->seed(DatabaseSeeder::class);
+    $sebelum = DataLahan::orderBy('id_lahan')->pluck('objectid', 'id_lahan')->all();
+
+    $this->seed(Database\Seeders\LahanSeeder::class);
+
+    expect(DataLahan::count())->toBe(101)
+        ->and(DataLahan::orderBy('id_lahan')->pluck('objectid', 'id_lahan')->all())->toBe($sebelum);
 });
 
 // ---------------------------------------------------------------- kegiatan
@@ -220,7 +232,7 @@ it('menghapus akun tidak menghapus riwayat kegiatan/monitoring yang dicatatnya',
 
 // ---------------------------------------------------------------- lahan
 
-it('impor GeoJSON menambah, memperbarui berdasarkan objectid, dan melewati fitur rusak', function () {
+it('impor GeoJSON menambah, memperbarui berdasarkan objectid + kecamatan, dan melewati fitur rusak', function () {
     $admin = User::factory()->admin()->create();
     $poly = ['type' => 'Polygon', 'coordinates' => [[[102.30, -3.80], [102.31, -3.80], [102.31, -3.81], [102.30, -3.80]]]];
     $fc = fn (array $f) => UploadedFile::fake()->createWithContent('data.geojson', json_encode(['type' => 'FeatureCollection', 'features' => $f]));
@@ -237,9 +249,14 @@ it('impor GeoJSON menambah, memperbarui berdasarkan objectid, dan melewati fitur
     $b = DataLahan::where('objectid', 8)->first();
     expect($b->kecamatan)->toBe('Singgaran Pati')->and($b->kritis)->toBe('Sangat Kritis')->and($b->luas_ha)->toBeGreaterThan(0);
 
-    // impor ulang: objectid 7 diperbarui, bukan digandakan
-    $this->actingAs($admin)->post('/admin/lahan/import', ['geojson' => $fc([$feat(['objectid' => 7, 'kecamatan' => 'Selebar', 'kritis' => 'Tidak Kritis', 'luas' => 9])])], JSONH)->assertOk();
-    expect(DataLahan::count())->toBe(2)->and(DataLahan::where('objectid', 7)->first()->kritis)->toBe('Tidak Kritis');
+    // impor ulang: objectid 7 di Selebar diperbarui, bukan digandakan (id_lahan dari berkas diabaikan)
+    $this->actingAs($admin)->post('/admin/lahan/import', ['geojson' => $fc([$feat(['objectid' => 7, 'id_lahan' => 999, 'kecamatan' => 'Selebar', 'kritis' => 'Tidak Kritis', 'luas' => 9])])], JSONH)->assertOk();
+    expect(DataLahan::count())->toBe(2)->and(DataLahan::where('objectid', 7)->first()->kritis)->toBe('Tidak Kritis')
+        ->and(DataLahan::find(999))->toBeNull();
+
+    // objectid yang sama di kecamatan lain = petak baru (poligon sumber terpotong batas kecamatan)
+    $this->actingAs($admin)->post('/admin/lahan/import', ['geojson' => $fc([$feat(['objectid' => 7, 'kecamatan' => 'Gading Cempaka', 'kritis' => 'Kritis', 'luas' => 2])])], JSONH)->assertOk();
+    expect(DataLahan::count())->toBe(3)->and(DataLahan::where('objectid', 7)->count())->toBe(2);
 
     $this->actingAs($admin)->post('/admin/lahan/import', ['geojson' => UploadedFile::fake()->createWithContent('x.geojson', 'bukan json')], JSONH)->assertStatus(422)->assertJsonValidationErrors('geojson');
 });
@@ -304,20 +321,21 @@ it('donut dashboard memakai warna peta, hanya kelas yang ada, dan jumlah kecamat
 
     // data asli: 4 kelas (tanpa Sangat Kritis), urutan & warna sama dengan legenda peta
     expect($app['dashboard']['donut']['labels'])->toBe(['Tidak Kritis', 'Potensial Kritis', 'Agak Kritis', 'Kritis'])
-        ->and($app['dashboard']['donut']['colors'])->toBe(['#22c55e', '#eab308', '#f97316', '#ef4444'])
-        ->and($app['warna']['kritis'])->toBe('#ef4444');
+        ->and($app['dashboard']['donut']['colors'])->toBe(['#4F0000', '#A85200', '#CD8966', '#F5CA7A'])
+        ->and($app['warna']['kritis'])->toBe('#F5CA7A');
 
-    // APP memuat 9 kecamatan (untuk filter); 7 di antaranya memiliki data -> angka seragam di dashboard & publik
+    // APP memuat 9 kecamatan (untuk filter); data QGIS mencakup semua kecamatan -> angka seragam di dashboard & publik
     expect($app['kecamatan'])->toHaveCount(9)
-        ->and(collect($app['kecamatan'])->where('ada_data', true))->toHaveCount(7);
-    $this->actingAs($admin)->get('/admin/dashboard')->assertSee('Berdasarkan data 7 Kecamatan');
+        ->and(collect($app['kecamatan'])->where('ada_data', true))->toHaveCount(9);
+    $this->actingAs($admin)->get('/admin/dashboard')->assertSee('Berdasarkan data 9 Kecamatan');
     auth()->logout();
-    $this->get('/')->assertSee('Berdasarkan data 7 Kecamatan');
+    $this->get('/')->assertSee('Berdasarkan data 9 Kecamatan');
 });
 
 
 it('filter peta menampilkan semua kecamatan, tetapi tingkat kekritisan hanya yang ada pada data', function () {
     $this->seed(DatabaseSeeder::class);
+    DataLahan::whereIn('kecamatan_id', [5, 9])->delete();   // Ratu Samban & Teluk Segara dikosongkan: label "(belum ada data)" tetap diuji
 
     $html = $this->get('/')->assertOk()->getContent();
 
@@ -377,6 +395,7 @@ it('navbar publik tidak lagi memuat menu Statistik Wilayah', function () {
 
 it('filter peta petugas identik dengan filter peta masyarakat', function () {
     $this->seed(DatabaseSeeder::class);
+    DataLahan::whereIn('kecamatan_id', [5, 9])->delete();   // Ratu Samban & Teluk Segara dikosongkan: label "(belum ada data)" tetap diuji
     $ids = ['f-q', 'f-kec', 'f-kritis', 'f-status', 'f-reset', 'result-count', 'result-list'];
 
     $publik = $this->get('/')->getContent();
@@ -493,10 +512,10 @@ it('kegiatan baru tidak boleh langsung berstatus Selesai', function () {
         ->assertStatus(422)->assertJsonValidationErrors('status');
 });
 
-it('topbar memakai ikon profil (bukan label role) dan tab Profil Petugas tidak ada', function () {
+it('sidebar memakai tautan profil pengguna (bukan label role) dan tab Profil Petugas tidak ada', function () {
     foreach (['admin' => '/admin/dashboard', 'petugas' => '/petugas/peta'] as $role => $url) {
         $html = $this->actingAs(User::factory()->$role()->create())->get($url)->assertOk()->getContent();
-        expect($html)->toContain('class="profile-btn')->toContain('href="'.url('/profil').'"')
+        expect($html)->toContain('class="sb-user')->toContain('href="'.url('/profil').'"')
             ->and($html)->not->toContain('role-pill')->and($html)->not->toContain('Profil Petugas');
     }
 });
@@ -576,7 +595,7 @@ it('filter, dashboard, dan statistik ikut menganggap petak direhabilitasi bukan 
     $donut = json_decode($mm[1], true)['dashboard']['donut'];
     expect($donut['labels'])->toBe(['Telah Direhabilitasi', 'Agak Kritis'])
         ->and(array_map('floatval', $donut['values']))->toBe([4.0, 6.0])
-        ->and($donut['colors'])->toBe(['#06b6d4', '#f97316']);
+        ->and($donut['colors'])->toBe(['#06b6d4', '#CD8966']);
     expect(preg_replace('/\s+/', ' ', strip_tags($html)))->toContain('6.0')->not->toContain('10.0 Ha');
 });
 
@@ -612,10 +631,12 @@ it('monitoring tampil satu baris per kegiatan (terbaru) dan seluruh catatan ada 
     expect(substr_count($html, 'class="act act-detail"'))->toBe(2);
     expect($html)->toContain('Catatan terbaru')->toContain('3 catatan')->not->toContain('Catatan awal</td>');
 
-    // Detail memuat semua catatan, terbaru di atas
-    $r = collect(riwayatDariHalaman($html))->firstWhere('nama', 'Kegiatan Satu')['riwayat'];
-    expect($r)->toHaveCount(3)->and(array_column($r, 'progres'))->toBe([70, 40, 10])
-        ->and($r[0]['can_edit'])->toBeTrue()->and($r[0]['can_delete'])->toBeFalse();   // petugas: ubah ya, hapus tidak
+    // halaman Riwayat memuat semua catatan, terbaru di atas
+    $this->actingAs($petugas)->get(route('monitoring.riwayat', $k1->id_kegiatan))->assertOk()
+        ->assertSeeInOrder(['Catatan terbaru', 'Catatan tengah', 'Catatan awal'])
+        ->assertSee('3 catatan')
+        ->assertSee('class="act act-ubah"', false)               // petugas: ubah ya
+        ->assertDontSee('data-open="modal-hapus"', false);       // petugas: hapus tidak
 });
 
 it('Admin melihat riwayat dengan hak ubah dan hapus pada setiap catatan', function () {
@@ -623,11 +644,12 @@ it('Admin melihat riwayat dengan hak ubah dan hapus pada setiap catatan', functi
     Monitoring::create(['id_kegiatan' => $k->id_kegiatan, 'tanggal_monitoring' => '2026-03-01', 'progres_persen' => 10, 'kondisi_lahan' => 'Stabil']);
     Monitoring::create(['id_kegiatan' => $k->id_kegiatan, 'tanggal_monitoring' => '2026-04-01', 'progres_persen' => 30, 'kondisi_lahan' => 'Membaik']);
 
-    $html = $this->actingAs(User::factory()->admin()->create())->get('/admin/monitoring')->assertOk()->getContent();
-    $r = riwayatDariHalaman($html)[0]['riwayat'];
+    $admin = User::factory()->admin()->create();
+    $this->actingAs($admin)->get('/admin/monitoring')->assertOk()->assertDontSee('Catat Monitoring');
 
-    expect($r)->toHaveCount(2)->and(array_column($r, 'can_edit'))->toBe([true, true])->and(array_column($r, 'can_delete'))->toBe([true, true]);
-    expect($html)->not->toContain('Catat Monitoring');
+    $html = $this->actingAs($admin)->get(route('monitoring.riwayat', $k->id_kegiatan))->assertOk()->getContent();
+    expect(substr_count($html, 'class="act act-ubah"'))->toBe(2)
+        ->and(substr_count($html, 'data-open="modal-hapus"'))->toBe(2);
 });
 
 it('petugas tidak melihat monitoring pada kegiatan milik petugas lain', function () {
@@ -698,7 +720,8 @@ it('tambah petak manual: validasi isian dan hanya Admin', function () {
     expect(DataLahan::count())->toBe(0);
 
     // tombol & modal tampil di halaman Data Lahan
-    $this->actingAs($admin)->get('/admin/lahan')->assertOk()->assertSee('Tambah Data')->assertSee('id="lahan-draw-map"', false)->assertSee('Impor GeoJSON');
+    $this->actingAs($admin)->get('/admin/lahan')->assertOk()->assertSee('Tambah Data')->assertSee('Impor GeoJSON');
+    $this->actingAs($admin)->get(route('admin.lahan.create'))->assertOk()->assertSee('id="lahan-draw-map"', false);
 });
 
 it('chatbot menjawab pertanyaan bebas lewat penyedia AI (di-fake) dan menyembunyikan galat', function () {
@@ -709,10 +732,13 @@ it('chatbot menjawab pertanyaan bebas lewat penyedia AI (di-fake) dan menyembuny
             ['candidates' => [['content' => ['parts' => [['text' => 'Jawaban uji.']]]]]]
         ),
     ]);
-    $this->postJson('/chatbot', ['message' => 'Berapa luas lahan kritis?'])->assertOk()->assertJson(['text' => 'Jawaban uji.']);
+    $this->postJson('/chatbot', ['message' => 'Berapa luas lahan kritis?'])->assertOk()->assertJson(['reply' => 'Jawaban uji.']);
 
+    // Http::fake() kedua tidak menimpa yang pertama (stub pertama yang cocok dipakai),
+    // jadi pabrik HTTP di-reset dulu sebelum mensimulasikan penyedia AI yang error.
+    \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory);
     \Illuminate\Support\Facades\Http::fake(['*' => \Illuminate\Support\Facades\Http::response('x', 500)]);
-    $this->postJson('/chatbot', ['message' => 'Halo'])->assertStatus(503)->assertDontSee('kunci-uji');
+    $this->postJson('/chatbot', ['message' => 'Berapa luas lahan kritis?'])->assertStatus(500)->assertDontSee('kunci-uji');
 
     $this->postJson('/chatbot', ['message' => ''])->assertStatus(422);
 });

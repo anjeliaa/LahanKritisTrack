@@ -5,8 +5,8 @@
   if (!el || !window.L) return;
   const APP = window.APP || { kegiatan: [], kecamatan: [] };
 
-  /* warna kelas kekritisan (samakan dengan variabel --tidak dst. di app.css) */
-  const COL = Object.assign({ tidak: '#22c55e', potensial: '#eab308', agak: '#f97316', kritis: '#ef4444', sangat: '#b91c1c', pulih: '#06b6d4' }, (window.APP && window.APP.warna) || {});
+  /* warna kelas kekritisan: simbologi resmi Peta Lahan Kritis KLHK (samakan dengan config/lahan.php dan variabel --tidak dst. di app.css) */
+  const COL = Object.assign({ tidak: '#4F0000', potensial: '#A85200', agak: '#CD8966', kritis: '#F5CA7A', sangat: '#FFFFBE', pulih: '#06b6d4' }, (window.APP && window.APP.warna) || {});
   const LABEL = { tidak: 'Tidak Kritis', potensial: 'Potensial Kritis', agak: 'Agak Kritis', kritis: 'Kritis', sangat: 'Sangat Kritis', pulih: 'Telah Direhabilitasi' };
   const ORDER = ['tidak', 'pulih', 'potensial', 'agak', 'kritis', 'sangat'];
 

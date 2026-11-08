@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\KegiatanRehabilitasi;
 use App\Support\Catalog;
+use App\Support\Perubahan;
 use App\Support\Ui;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -93,6 +94,8 @@ class KegiatanController extends InternalController
         $this->pastikanBolehDikelola($request, $kegiatan);
 
         $data = $this->validated($request);
+        $sebelum = $kegiatan->jejak();
+        $pengelolaLama = $kegiatan->id_user;
 
         // Hanya Admin yang dapat memindahkan penanggung jawab.
         if (! $request->user()->isAdmin()) {
@@ -109,6 +112,15 @@ class KegiatanController extends InternalController
         // status berubah menjadi Selesai lewat form: lengkapi tanggal selesai bila kosong
         if ($kegiatan->status === 'Selesai' && ! $kegiatan->tanggal_selesai) {
             $kegiatan->update(['tanggal_selesai' => $kegiatan->tanggal_status ?? today()]);
+        }
+
+        // Admin mengubah kegiatan milik Petugas -> Petugas diberi tahu apa saja yang berubah.
+        if ($request->user()->isAdmin()) {
+            $sesudah = $kegiatan->fresh();
+            Perubahan::beritahu(
+                'kegiatan', $sebelum, $sesudah->jejak(), $sesudah->nama_kegiatan,
+                [$pengelolaLama, $sesudah->id_user], $request->user()
+            );
         }
 
         return $this->kembaliKeDaftar($request, 'Perubahan kegiatan disimpan.');

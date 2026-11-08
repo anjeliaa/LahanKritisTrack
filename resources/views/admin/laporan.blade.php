@@ -64,7 +64,8 @@
     <div class="report-body">
         <div class="kop">
             <div class="seal">
-                <svg class="ic"><use href="#i-leaf"/></svg>
+                <b>L</b>
+                <svg class="ic" aria-hidden="true"><use href="#i-leaf"/></svg>
             </div>
 
             <div class="c">
@@ -160,7 +161,8 @@
     <div class="report-body">
         <div class="kop">
             <div class="seal">
-                <svg class="ic"><use href="#i-leaf"/></svg>
+                <b>L</b>
+                <svg class="ic" aria-hidden="true"><use href="#i-leaf"/></svg>
             </div>
 
             <div class="c">

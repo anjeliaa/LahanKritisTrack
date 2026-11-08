@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Perubahan;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -155,5 +156,26 @@ class KegiatanRehabilitasi extends Model
         if ($target !== null && $target !== $this->status) {
             $this->terapkanStatus($target, $tgl);
         }
+    }
+
+    // ------------------------------------------------------------------ jejak perubahan
+
+    /** Nilai yang tampil ke pengguna (label => teks), dipakai membandingkan sebelum/sesudah Admin mengubah. */
+    public function jejak(): array
+    {
+        $tgl = fn ($d) => $d?->locale('id')->translatedFormat('j F Y') ?? '-';
+
+        return [
+            'Nama kegiatan'            => (string) $this->nama_kegiatan,
+            'Jenis kegiatan'           => $this->jenis_kegiatan ?: '-',
+            'Pelaksana'                => $this->penanggung_jawab ?: '-',
+            'Petugas penanggung jawab' => $this->id_user ? (User::whereKey($this->id_user)->value('nama') ?? '-') : 'Belum ditugaskan',
+            'Petak lahan'              => $this->id_lahan ? 'Petak #'.$this->id_lahan : '-',
+            'Target luas'              => Perubahan::angka($this->target_luas).' Ha',
+            'Tanggal mulai'            => $tgl($this->tanggal_mulai),
+            'Tanggal selesai (target)' => $tgl($this->tanggal_selesai),
+            'Status'                   => (string) $this->status,
+            'Dipublikasikan'           => $this->is_published ? 'Ya' : 'Tidak',
+        ];
     }
 }

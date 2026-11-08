@@ -33,13 +33,15 @@ return [
     ],
 
     // Warna per kelas: SATU sumber untuk peta, legenda, donut dashboard (dikirim ke JS lewat window.APP.warna)
+    // Kelas kekritisan mengikuti simbologi resmi layer "Peta Lahan Kritis" KLHK (Ditjen PDASRH), sebagaimana
+    // disajikan pada layanan Satu Peta BIG (RGB 79,0,0 / 168,82,0 / 205,137,102 / 245,202,122 / 255,255,190).
     'warna' => [
-        'tidak'     => '#22c55e',
-        'potensial' => '#eab308',
-        'agak'      => '#f97316',
-        'kritis'    => '#ef4444',
-        'sangat'    => '#b91c1c',
-        'pulih'     => '#06b6d4',   // petak yang kegiatan rehabilitasinya sudah Selesai (status tampilan, bukan kelas BPDAS)
+        'tidak'     => '#4F0000',
+        'potensial' => '#A85200',
+        'agak'      => '#CD8966',
+        'kritis'    => '#F5CA7A',
+        'sangat'    => '#FFFFBE',
+        'pulih'     => '#06b6d4',   // petak yang kegiatan rehabilitasinya sudah Selesai (status tampilan tambahan sistem, bukan kelas KLHK)
     ],
 
     // Status TAMPILAN untuk petak yang sudah selesai direhabilitasi. Kelas kekritisan asli (data BPDAS) tidak diubah.

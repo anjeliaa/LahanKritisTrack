@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\KegiatanRehabilitasi;
 use App\Models\Monitoring;
 use App\Support\Catalog;
+use App\Support\Perubahan;
 use App\Support\Ui;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -75,6 +76,7 @@ class MonitoringController extends InternalController
         $data = $this->validated($request);
         $kegiatanBaru = $this->kegiatanBolehDicatat($request, (int) $data['id_kegiatan']);
         $idKegiatanLama = $monitoring->id_kegiatan;
+        $sebelum = $monitoring->jejak();
 
         // tanggal kosong = pertahankan tanggal lama (kolom wajib terisi)
         if (blank($data['tanggal_monitoring'] ?? null)) {
@@ -95,6 +97,15 @@ class MonitoringController extends InternalController
         $kegiatanBaru->selaraskanStatus();
         if ($idKegiatanLama !== $kegiatanBaru->id_kegiatan) {
             KegiatanRehabilitasi::find($idKegiatanLama)?->selaraskanStatus();
+        }
+
+        // Admin mengubah laporan monitoring milik Petugas -> Petugas diberi tahu apa saja yang berubah.
+        if ($request->user()->isAdmin()) {
+            $sesudah = $monitoring->fresh();
+            Perubahan::beritahu(
+                'monitoring', $sebelum, $sesudah->jejak(), $kegiatanBaru->nama_kegiatan,
+                [$monitoring->id_user, $kegiatanBaru->id_user], $request->user()
+            );
         }
 
         return $this->kembaliKeDaftar($request, 'Laporan monitoring diperbarui.');

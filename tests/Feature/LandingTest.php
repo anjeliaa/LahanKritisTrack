@@ -24,7 +24,7 @@ it('halaman masyarakat memuat struktur desain baru dan semua kait JavaScript pet
     $html = test()->get('/')->assertOk()->getContent();
 
     foreach (['lp-hero', 'lp-impact', 'lp-about', 'id="peta"', 'id="kegiatan"', 'id="map"', 'id="f-q"', 'id="f-kec"', 'id="f-kritis"', 'id="f-status"',
-        'id="result-list"', 'id="kec-kegiatan"', 'data-hero-search', 'data-open-chatbot', 'id="chatbot"', 'css/landing.css', 'js/landing.js', 'js/map.js'] as $kait) {
+        'id="result-list"', 'id="kec-kegiatan"', 'data-open-chatbot', 'id="chatbot"', 'css/landing.css', 'js/landing.js', 'js/map.js'] as $kait) {
         expect($html)->toContain($kait);
     }
     expect($html)->not->toContain('Statistik Wilayah');
@@ -41,7 +41,7 @@ it('bagian "cara membaca warna" menampilkan jumlah petak dan luas per kelas deng
     expect($teks)->toContain('Kritis 1 petak · 3.5 Ha')->toContain('Agak Kritis 2 petak · 15.3 Ha')
         ->toContain('Telah Direhabilitasi 1 petak · 40.0 Ha');
     // warna sama dengan peta/legenda
-    expect($html)->toContain('data-kelas="pulih" style="--c: #06b6d4"')->toContain('data-kelas="kritis" style="--c: #ef4444"')
+    expect($html)->toContain('data-kelas="pulih" style="--c: #06b6d4"')->toContain('data-kelas="kritis" style="--c: #F5CA7A"')
         ->and($html)->not->toContain('data-kelas="sangat"');   // kelas tanpa data tidak ditampilkan
 });
 

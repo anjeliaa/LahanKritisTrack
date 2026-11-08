@@ -10,6 +10,13 @@
         const Chart = window.Chart;
         const dash = (window.APP || {}).dashboard || {};
         const fmt = (n) => Number(n).toLocaleString('id-ID', { maximumFractionDigits: 2 });
+        /* warna sangat terang -> garis tepi abu-kuning; selain itu garis putih pemisah irisan */
+        const isPucat = (hex) => {
+            const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
+            if (!m) return '#ffffff';
+            const n = parseInt(m[1], 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+            return (0.299 * r + 0.587 * g + 0.114 * b) > 230 ? '#cfc98a' : '#ffffff';
+        };
 
         Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
         Chart.defaults.font.size = 11;
@@ -42,7 +49,8 @@
                         datasets: [{
                             data: d.values,
                             backgroundColor: d.colors,
-                            borderColor: '#ffffff',
+                            // irisan berwarna sangat pucat (mis. kuning muda "Sangat Kritis") diberi garis tepi agar tidak menyatu dengan kartu putih
+                            borderColor: d.colors.map(isPucat),
                             borderWidth: 2
                         }]
                     },

@@ -15,6 +15,12 @@
     $u = auth()->user();
     $roleLabel = $role === 'admin' ? 'Admin' : 'Petugas';
     $inisial = mb_strtoupper(mb_substr($u->nama, 0, 1));
+    // Petugas: perubahan dari Admin yang belum dibaca (lencana di sidebar + panel di halaman)
+    $notifBaru = $role === 'petugas' ? $u->unreadNotifications()->get() : collect();
+    $lencana = [
+        'kegiatan'   => $notifBaru->filter(fn ($n) => ($n->data['jenis'] ?? null) === 'kegiatan')->count(),
+        'monitoring' => $notifBaru->filter(fn ($n) => ($n->data['jenis'] ?? null) === 'monitoring')->count(),
+    ];
 @endphp
 
 <aside class="sb no-print" aria-label="Navigasi utama">
@@ -31,6 +37,7 @@
         @foreach($tabs as $t)
         <a href="{{ route($t['route']) }}" class="{{ $t['key'] === $active ? 'active' : '' }}">
             <svg class="ic" aria-hidden="true"><use href="#i-{{ $t['icon'] }}"/></svg>{{ $t['label'] }}
+            @if(($lencana[$t['key']] ?? 0) > 0)<span class="sb-badge" data-lencana title="Perubahan dari Admin">{{ $lencana[$t['key']] }}</span>@endif
         </a>
         @endforeach
     </nav>
@@ -66,6 +73,7 @@
             @else
                 @include('partials.page-header')
             @endif
+            @include('partials.perubahan-admin')
             @yield('content')
         </div>
     </main>

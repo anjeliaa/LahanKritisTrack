@@ -48,7 +48,7 @@
                 <code>objectid</code><code>kecamatan</code><code>kritis</code><code>luas</code><code>bpdas</code><code>wilayah</code>
             </div>
             <div class="note-box" style="margin-top:14px">
-                Petak dengan <code>objectid</code> yang sudah ada akan <b>diperbarui</b>; selebihnya <b>ditambahkan</b>.
+                Petak dengan pasangan <code>objectid</code> dan <code>kecamatan</code> yang sudah ada akan <b>diperbarui</b>; selebihnya <b>ditambahkan</b>. Satu <code>objectid</code> sumber boleh muncul di beberapa kecamatan.
                 Bila <code>luas</code> (Ha) kosong, luas dihitung dari geometri.
             </div>
         </div>

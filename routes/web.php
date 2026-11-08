@@ -8,6 +8,7 @@ use App\Http\Controllers\KegiatanController;
 use App\Http\Controllers\LahanController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\MonitoringController;
+use App\Http\Controllers\PerubahanController;
 use App\Http\Controllers\PetugasController;
 use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\PublicController;
@@ -70,6 +71,9 @@ Route::middleware(EnsureRole::class . ':petugas')
         Route::get('/peta', [PetugasController::class, 'peta'])->name('peta');
         Route::get('/kegiatan', [PetugasController::class, 'kegiatan'])->name('kegiatan');
         Route::get('/monitoring', [PetugasController::class, 'monitoring'])->name('monitoring');
+
+        // Pemberitahuan perubahan dari Admin: tandai sudah dibaca
+        Route::post('/perubahan/baca', [PerubahanController::class, 'baca'])->name('perubahan.baca');
     });
 
 // ---------- Pengaturan akun sendiri (Admin & Petugas) ----------

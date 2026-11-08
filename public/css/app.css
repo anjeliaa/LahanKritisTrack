@@ -12,7 +12,7 @@
   --brand-50:#f0fdf4;--brand-100:#dcfce7;--brand-200:#bbf7d0;--brand-400:#4ade80;--brand-500:#22c55e;--brand-600:#16a34a;--brand-700:#15803d;--brand-800:#166534;--brand-900:#14532d;--brand-950:#052e16;
   --em-400:#34d399;--em-500:#10b981;
   --bg:#f8fafc;--card:#ffffff;--text:#0f172a;--text2:#334155;--muted:#64748b;--faint:#94a3b8;--line:#e2e8f0;--line2:#f1f5f9;--soft:#f8fafc;
-  --tidak:#22c55e;--sangat:#b91c1c;--kritis:#ef4444;--agak:#f97316;--potensial:#eab308;
+  --tidak:#4F0000;--sangat:#FFFFBE;--kritis:#F5CA7A;--agak:#CD8966;--potensial:#A85200;
   --font:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;--mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
   --shadow:0 1px 3px rgba(15,23,42,.06);--shadow-lg:0 25px 50px -12px rgba(0,0,0,.25);
   --gutter:80px;
@@ -38,7 +38,7 @@ img{max-width:100%}.mono{font-family:var(--mono)}.sr-only{position:absolute;widt
 .btn-dark{background:rgba(30,41,59,.8);border:1px solid #334155;color:#e2e8f0}
 .btn-lg{padding:14px 24px;font-size:13px;font-weight:800}.btn-block{width:100%}
 .badge{display:inline-block;padding:2px 8px;border-radius:6px;font:700 10px/1.6 var(--mono);white-space:nowrap}
-.b-tidak{background:#dcfce7;color:#15803d}.b-pulih{background:#cffafe;color:#0e7490}.b-sangat{background:#fecaca;color:#991b1b}.b-kritis{background:#fee2e2;color:#dc2626}.b-agak{background:#ffedd5;color:#ea580c}.b-potensial{background:#fef9c3;color:#a16207}.b-berjalan,.b-membaik{background:#d1fae5;color:#059669}.b-selesai{background:#dbeafe;color:#2563eb}.b-rencana{background:#ffedd5;color:#ea580c}.b-admin,.b-petugas{background:#f1f5f9;color:#334155}
+/* warna kelas kekritisan mengikuti simbologi resmi Peta Lahan Kritis KLHK (layanan Satu Peta BIG) */.b-tidak{background:#4F0000;color:#fff}.b-pulih{background:#cffafe;color:#0e7490}.b-sangat{background:#FFFFBE;color:#6b5400;box-shadow:inset 0 0 0 1px #e3df9a}.b-kritis{background:#F5CA7A;color:#6b4300}.b-agak{background:#CD8966;color:#3d1c08}.b-potensial{background:#A85200;color:#fff}.b-berjalan,.b-membaik{background:#d1fae5;color:#059669}.b-selesai{background:#dbeafe;color:#2563eb}.b-rencana{background:#ffedd5;color:#ea580c}.b-admin,.b-petugas{background:#f1f5f9;color:#334155}
 [data-theme=dark] .b-admin,[data-theme=dark] .b-petugas{background:#1e293b;color:#cbd5e1}
 .act{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:8px;font-weight:700;font-size:12px;transition:.15s}
 .act .ic{font-size:13px}.act-ubah{background:#fffbeb;color:#d97706}.act-hapus{background:#fef2f2;color:#dc2626}.act-detail{background:#eff6ff;color:#2563eb}.act-upd{background:#ecfdf5;color:#059669}
@@ -270,7 +270,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 /* legenda kelas kekritisan di pojok peta */
 .map-legend-ctl{background:rgba(51,57,70,.96);color:#f1f5f9;border-radius:10px;padding:10px 14px;font:600 12px/1 var(--font);box-shadow:0 2px 8px rgba(0,0,0,.3)}
 .map-legend-ctl div{display:flex;align-items:center;gap:8px;padding:4px 0}
-.map-legend-ctl i{display:inline-block;width:12px;height:12px;border-radius:3px}
+.map-legend-ctl i{display:inline-block;width:12px;height:12px;border-radius:3px;box-shadow:0 0 0 1px rgba(255,255,255,.55)}
 .result-list:empty{display:none}
 
 /* ===== responsive ===== */

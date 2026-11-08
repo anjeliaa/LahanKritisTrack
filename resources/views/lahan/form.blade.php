@@ -95,7 +95,7 @@
         </div>
         <div class="note-box">
             Bentuk polygon (geometri) hanya dapat diubah lewat <a href="{{ route('admin.lahan.impor') }}" class="link">Impor GeoJSON</a>.
-            Petak dengan <code>objectid</code> yang sama akan diperbarui.
+            Petak dengan <code>objectid</code> dan kecamatan yang sama akan diperbarui.
         </div>
     </section>
     @else

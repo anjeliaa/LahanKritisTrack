@@ -13,7 +13,7 @@ php artisan storage:link           # agar foto dokumentasi dapat ditampilkan
 php artisan serve
 ```
 
-Data awal (seeder): 3 akun dan **80 petak lahan kritis** dari GeoJSON BPDAS Ketahun.
+Data awal (seeder): 3 akun dan **101 petak lahan kritis** (80 `objectid` sumber, terpotong per kecamatan) di 9 kecamatan Kota Bengkulu, total 15.028,54 ha. Sumbernya Peta Lahan Kritis 1:50.000 (KLHK/PDASRH) dari Satu Peta BIG, diolah di QGIS (Fix geometries, Intersection dengan batas kecamatan, pembuangan sliver) dan disimpan di `database/seeders/data/lahan_kritis.geojson`. Impor ulang berkas yang sama tidak menggandakan petak: kuncinya pasangan `objectid` + kecamatan.
 Kata sandi awal semua akun: `lahankritis123` (ubah lewat `SEED_USER_PASSWORD` di `.env` sebelum seeding, atau lewat menu Manajemen Akun).
 
 | Username | Role |
