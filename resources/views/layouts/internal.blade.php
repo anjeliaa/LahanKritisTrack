@@ -63,6 +63,7 @@
             <div class="hb-util no-print">
                 <button type="button" class="hb-burger" data-sb-toggle aria-label="Buka menu"><svg class="ic"><use href="#i-bars"/></svg></button>
                 <div class="hb-right">
+                    @include('partials.perubahan-admin')
                     <span class="hb-pill"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg>{{ now('Asia/Jakarta')->locale('id')->translatedFormat('l, j F Y') }}</span>
                     <span class="hb-role">{{ $roleLabel }}</span>
                 </div>
@@ -73,7 +74,6 @@
             @else
                 @include('partials.page-header')
             @endif
-            @include('partials.perubahan-admin')
             @yield('content')
         </div>
     </main>
@@ -84,6 +84,12 @@
 <script src="{{ asset('js/app.js') }}"></script>
 <script>
 document.addEventListener('click', function (e) {
+    var nf = document.querySelector('[data-nf]');
+    if (nf) {
+        var pop = nf.querySelector('[data-nf-pop]'), btn = nf.querySelector('[data-nf-toggle]');
+        if (e.target.closest('[data-nf-toggle]')) { pop.hidden = !pop.hidden; btn.setAttribute('aria-expanded', String(!pop.hidden)); }
+        else if (!e.target.closest('[data-nf-pop]')) { pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); }
+    }
     if (e.target.closest('[data-sb-toggle]')) document.body.classList.toggle('sb-open');
     else if (document.body.classList.contains('sb-open') && !e.target.closest('.sb')) document.body.classList.remove('sb-open');
 });

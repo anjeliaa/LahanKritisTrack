@@ -107,12 +107,12 @@ it('halaman petugas menampilkan perubahan dari Admin, lencana, dan bisa ditandai
     $this->actingAs($admin)->putJson("/kegiatan/{$k->id_kegiatan}", payloadKegiatan($k, ['tanggal_selesai' => '2026-06-20']))->assertOk();
 
     $this->actingAs($a)->get('/petugas/kegiatan')->assertOk()
-        ->assertSee('Perubahan dari Admin')
+        ->assertSee('data-nf-toggle', false)->assertSee('Baru (1)')
         ->assertSee('Tanggal selesai (target): 10 Mei 2026 → 20 Juni 2026', false)
         ->assertSee('data-lencana', false);
 
     // petugas lain tidak melihat perubahan itu
-    $this->actingAs($b)->get('/petugas/kegiatan')->assertOk()->assertDontSee('Perubahan dari Admin');
+    $this->actingAs($b)->get('/petugas/kegiatan')->assertOk()->assertDontSee('Baru (1)')->assertDontSee('Tandai sudah dibaca');
 
     // admin tidak boleh memakai rute petugas
     $this->actingAs($admin)->post('/petugas/perubahan/baca')->assertForbidden();
@@ -122,7 +122,7 @@ it('halaman petugas menampilkan perubahan dari Admin, lencana, dan bisa ditandai
 
     // setelah dibaca: masuk riwayat, lencana hilang
     $this->actingAs($a)->get('/petugas/kegiatan')->assertOk()
-        ->assertSee('Riwayat perubahan dari Admin')
+        ->assertSee('Sebelumnya')
         ->assertDontSee('data-lencana', false)
         ->assertDontSee('Tandai sudah dibaca');
 });
