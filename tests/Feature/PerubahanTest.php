@@ -87,7 +87,7 @@ it('petugas diberi tahu bila Admin mengubah laporan monitoring yang ia catat', f
 
     $this->actingAs($admin)->putJson("/monitoring/{$m->id_monitoring}", [
         'id_kegiatan' => $k->id_kegiatan, 'tanggal_monitoring' => '2026-04-01',
-        'progres_persen' => 25, 'kondisi_lahan' => 'Stabil', 'catatan' => 'Awal (catatan dari admin) dipercepat',
+        'progres_persen' => 25, 'kondisi_lahan' => 'Stabil', 'catatan' => "Awal\ndipercepat lagi",
     ])->assertOk();
 
     expect($a->unreadNotifications()->count())->toBe(1);
@@ -95,8 +95,9 @@ it('petugas diberi tahu bila Admin mengubah laporan monitoring yang ia catat', f
     expect($data['jenis'])->toBe('monitoring')->and($data['kegiatan'])->toBe('Reboisasi Uji');
 
     $perubahan = collect($data['perubahan'])->keyBy('label');
-    expect($perubahan->keys()->sort()->values()->all())->toBe(['Catatan', 'Progres']);
+    expect($perubahan->keys()->sort()->values()->all())->toBe(['Catatan Admin', 'Progres']);
     expect($perubahan['Progres'])->toMatchArray(['lama' => '10%', 'baru' => '25%']);
+    expect($perubahan['Catatan Admin']['baru'])->toBe('dipercepat lagi');
 });
 
 it('halaman petugas menampilkan perubahan dari Admin, lencana, dan bisa ditandai sudah dibaca', function () {
@@ -107,12 +108,12 @@ it('halaman petugas menampilkan perubahan dari Admin, lencana, dan bisa ditandai
     $this->actingAs($admin)->putJson("/kegiatan/{$k->id_kegiatan}", payloadKegiatan($k, ['tanggal_selesai' => '2026-06-20']))->assertOk();
 
     $this->actingAs($a)->get('/petugas/kegiatan')->assertOk()
-        ->assertSee('data-nf-toggle', false)->assertSee('Baru (1)')
+        ->assertSee('Perubahan dari Admin')
         ->assertSee('Tanggal selesai (target): 10 Mei 2026 → 20 Juni 2026', false)
         ->assertSee('data-lencana', false);
 
     // petugas lain tidak melihat perubahan itu
-    $this->actingAs($b)->get('/petugas/kegiatan')->assertOk()->assertDontSee('Baru (1)')->assertDontSee('Tandai sudah dibaca');
+    $this->actingAs($b)->get('/petugas/kegiatan')->assertOk()->assertDontSee('Perubahan dari Admin');
 
     // admin tidak boleh memakai rute petugas
     $this->actingAs($admin)->post('/petugas/perubahan/baca')->assertForbidden();
@@ -122,7 +123,64 @@ it('halaman petugas menampilkan perubahan dari Admin, lencana, dan bisa ditandai
 
     // setelah dibaca: masuk riwayat, lencana hilang
     $this->actingAs($a)->get('/petugas/kegiatan')->assertOk()
-        ->assertSee('Sebelumnya')
+        ->assertSee('Riwayat perubahan dari Admin')
         ->assertDontSee('data-lencana', false)
         ->assertDontSee('Tandai sudah dibaca');
+});
+
+
+function monitoringCatatan(User $petugas, string $catatan): Monitoring
+{
+    $k = kegiatanPerubahan(petakPerubahan(), $petugas);
+
+    return Monitoring::create([
+        'id_kegiatan' => $k->id_kegiatan, 'id_user' => $petugas->id_user, 'tanggal_monitoring' => '2026-04-01',
+        'progres_persen' => 10, 'kondisi_lahan' => 'Stabil', 'catatan' => $catatan,
+    ]);
+}
+
+function payloadMonitoring(Monitoring $m, string $catatan): array
+{
+    return [
+        'id_kegiatan' => $m->id_kegiatan, 'tanggal_monitoring' => '2026-04-01',
+        'progres_persen' => 10, 'kondisi_lahan' => 'Stabil', 'catatan' => $catatan,
+    ];
+}
+
+it('catatan tambahan Admin diberi tanda (Admin) dan tidak tercampur dengan catatan Petugas', function () {
+    $admin = User::factory()->admin()->create();
+    $a = User::factory()->petugas()->create();
+    $m = monitoringCatatan($a, 'Sosialisasi selesai diselenggarakan.');
+
+    // Admin menambah baris baru
+    $this->actingAs($admin)->putJson("/monitoring/{$m->id_monitoring}", payloadMonitoring($m, "Sosialisasi selesai diselenggarakan.\ndipercepat lagi proses nya"))->assertOk();
+    expect($m->fresh()->catatan)->toBe("Sosialisasi selesai diselenggarakan.\n(Admin): dipercepat lagi proses nya");
+
+    // pemberitahuan hanya memuat tambahan Admin, bukan seluruh catatan
+    $item = collect($a->unreadNotifications()->first()->data['perubahan'])->firstWhere('label', 'Catatan Admin');
+    expect($item['baru'])->toBe('dipercepat lagi proses nya');
+
+    // disimpan ulang tanpa perubahan: tanda tidak dobel dan tidak ada pemberitahuan baru
+    $this->actingAs($admin)->putJson("/monitoring/{$m->id_monitoring}", payloadMonitoring($m, $m->fresh()->catatan))->assertOk();
+    expect($m->fresh()->catatan)->toBe("Sosialisasi selesai diselenggarakan.\n(Admin): dipercepat lagi proses nya");
+    expect($a->unreadNotifications()->count())->toBe(1);
+});
+
+it('tambahan Admin di ujung baris Petugas dipindah ke baris baru bertanda (Admin)', function () {
+    $admin = User::factory()->admin()->create();
+    $a = User::factory()->petugas()->create();
+    $m = monitoringCatatan($a, 'Bibit sudah dibagikan.');
+
+    $this->actingAs($admin)->putJson("/monitoring/{$m->id_monitoring}", payloadMonitoring($m, 'Bibit sudah dibagikan. Tolong dipercepat'))->assertOk();
+
+    expect($m->fresh()->catatan)->toBe("Bibit sudah dibagikan.\n(Admin): Tolong dipercepat");
+});
+
+it('catatan yang ditulis Petugas sendiri tidak diberi tanda (Admin)', function () {
+    $a = User::factory()->petugas()->create();
+    $m = monitoringCatatan($a, 'Awal');
+
+    $this->actingAs($a)->putJson("/monitoring/{$m->id_monitoring}", payloadMonitoring($m, "Awal\nlanjut menanam"))->assertOk();
+
+    expect($m->fresh()->catatan)->toBe("Awal\nlanjut menanam");
 });

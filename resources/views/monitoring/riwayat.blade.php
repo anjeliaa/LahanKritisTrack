@@ -51,7 +51,7 @@
             <div class="progress"><i style="width:{{ $r['progres'] }}%"></i></div>
 
             @if(!empty($r['catatan']) && $r['catatan'] !== '-')
-            <p class="rw-note">{{ $r['catatan'] }}</p>
+            <p class="rw-note" style="white-space:pre-line">{{ $r['catatan'] }}</p>
             @endif
 
             <div class="rw-meta">Dicatat oleh {{ $r['petugas'] }}</div>

@@ -46,7 +46,7 @@
         <div class="lp-footer-brand">
             <a href="{{ route('home') }}" class="lp-logo">
                 <span class="lp-logo-mark"><span class="lp-logo-letter">L</span><svg class="ic" aria-hidden="true"><use href="#i-leaf"/></svg></span>
-                <span class="lp-logo-text"><b>LahanKritis<i>Track</i></b><small>Internal System</small></span>
+                <span class="lp-logo-text"><b>LahanKritis<i>Track</i></b></span>
             </a>
             <p>Portal informasi terbuka tentang sebaran lahan kritis dan kemajuan program rehabilitasi di Kota Bengkulu.</p>
         </div>
@@ -74,7 +74,7 @@
             </div>
         </div>
     </div>
-    <div class="lp-footer-bottom">&copy; 2026 Pemerintah Kota Bengkulu &amp; BPDAS Ketahun Bengkulu. Hak Cipta Dilindungi.</div>
+    <div class="lp-footer-bottom">&copy; 2026  Hak Cipta Dilindungi.</div>
 </footer>
 
 @include('partials.chatbot')

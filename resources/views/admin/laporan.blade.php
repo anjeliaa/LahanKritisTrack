@@ -64,8 +64,7 @@
     <div class="report-body">
         <div class="kop">
             <div class="seal">
-                <b>L</b>
-                <svg class="ic" aria-hidden="true"><use href="#i-leaf"/></svg>
+                <svg class="ic"><use href="#i-leaf"/></svg>
             </div>
 
             <div class="c">
@@ -161,8 +160,7 @@
     <div class="report-body">
         <div class="kop">
             <div class="seal">
-                <b>L</b>
-                <svg class="ic" aria-hidden="true"><use href="#i-leaf"/></svg>
+                <svg class="ic"><use href="#i-leaf"/></svg>
             </div>
 
             <div class="c">
@@ -208,7 +206,7 @@
                             <td>{{ $m['kecamatan'] }}</td>
                             <td class="r mono">{{ $m['progres'] }}%</td>
                             <td>{{ $m['kondisi'] }}</td>
-                            <td>{{ $m['catatan'] }}</td>
+                            <td style="white-space:pre-line">{{ $m['catatan'] }}</td>
                             <td>{{ $m['petugas'] }}</td>
                         </tr>
                     @empty

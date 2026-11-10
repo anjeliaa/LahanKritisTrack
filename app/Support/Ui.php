@@ -46,7 +46,11 @@ class Ui
 
         return [
             'icon' => $h[0],
-            'path' => 'lahankritistrack / ' . str_replace('.', ' / ', $key),
+            'path' => match (true) {
+                str_starts_with($key, 'admin.') => 'Panel Admin',
+                str_starts_with($key, 'petugas.') => 'Panel Petugas',
+                default => 'Akun Saya',
+                },
             'title' => $h[1],
             'desc' => $h[2],
             'stats' => $stats,

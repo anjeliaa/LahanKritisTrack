@@ -62,7 +62,7 @@
 
                     <td><span class="badge b-{{ $m['kondisi_class'] }}">{{ $m['kondisi'] }}</span></td>
 
-                    <td class="muted" style="max-width:260px;font-size:12px">{{ $m['catatan'] }}</td>
+                    <td class="muted" style="max-width:260px;font-size:12px;white-space:pre-line">{{ $m['catatan'] }}</td>
 
                     <td class="muted" style="font-size:12px">{{ $m['petugas'] }}</td>
 

@@ -94,7 +94,7 @@
             <p>LahanKritisTrack menghubungkan informasi lokasi lahan kritis dengan pengelolaan kegiatan rehabilitasi, pemantauan lapangan, dan pelaporan — agar kemajuannya dapat dilihat siapa saja.</p>
             <ul class="lp-values">
                 <li><span><svg class="ic" aria-hidden="true"><use href="#i-leaf"/></svg></span><div><b>Konservasi Berkelanjutan</b><p>Pemulihan lahan kritis dipantau secara terorganisir bersama kelompok tani setempat.</p></div></li>
-                <li><span><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg></span><div><b>Data Bersumber Resmi</b><p>Data spasial berasal dari inventarisasi instansi resmi, termasuk BPDAS Ketahun.</p></div></li>
+                <li><span><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg></span><div><b>Data Bersumber Resmi</b><p>Data lahan kritis bersumber dari Peta Lahan Kritis KLHK melalui layanan Satu Peta BIG, dengan BPDAS Ketahun sebagai instansi pembina.</p></div></li>
                 <li><span><svg class="ic" aria-hidden="true"><use href="#i-eye"/></svg></span><div><b>Keterbukaan Publik</b><p>Masyarakat dapat melihat realisasi kegiatan rehabilitasi secara transparan kapan saja.</p></div></li>
             </ul>
         </div>

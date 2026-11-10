@@ -78,6 +78,11 @@ class MonitoringController extends InternalController
         $idKegiatanLama = $monitoring->id_kegiatan;
         $sebelum = $monitoring->jejak();
 
+        // Catatan yang ditambahkan Admin diberi tanda "(Admin): " agar mudah dibedakan dari catatan Petugas.
+        if ($request->user()->isAdmin() && array_key_exists('catatan', $data)) {
+            $data['catatan'] = Perubahan::tandaiCatatanAdmin($monitoring->catatan, $data['catatan']);
+        }
+
         // tanggal kosong = pertahankan tanggal lama (kolom wajib terisi)
         if (blank($data['tanggal_monitoring'] ?? null)) {
             unset($data['tanggal_monitoring']);
