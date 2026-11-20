@@ -26,6 +26,13 @@
   el.addEventListener('mouseleave', () => map.scrollWheelZoom.disable());
 
   const layers = {};
+  const TB = document.getElementById('t-bar');   /* bar "Tahun data" (hanya ada di halaman publik) */
+  const T = TB ? { geojson: TB.dataset.geojson, ringkas: TB.dataset.ringkas, utama: Number(TB.dataset.utama), tahun: JSON.parse(TB.dataset.tahun) } : null;
+  const cache = {};     /* tahun -> { id_lahan: properties } */
+  let curYear = T ? T.utama : null;
+  let cmpYear = null;   /* tahun pembanding (opsional) */
+  let changed = null;   /* Set id_lahan yang kelasnya berbeda antara dua tahun yang dibandingkan */
+  let ringkas = null, playTimer = null, legendDiv = null;
   let selLayer = null;  /* petak yang diklik */
   let selKec = null;    /* kecamatan yang dipilih dari daftar hasil */
   let allBounds = null;
@@ -61,6 +68,7 @@
   function restyle() {
     Object.values(layers).forEach((l) => {
       const s = baseStyle(l.feature, l.feature._ok !== false);
+      if (changed && changed.has(Number(l.feature.properties.id_lahan)) && l.feature._ok !== false) { s.color = '#1d4ed8'; s.weight = 2.6; }
       if (selKec && l.feature.properties.kec_slug === selKec && l.feature._ok !== false) s.weight = 2;
       l.setStyle(s);
     });
@@ -222,6 +230,103 @@
     if (p) { p.classList.remove('petak-pulse'); void p.getBoundingClientRect(); p.classList.add('petak-pulse'); }
   }
 
+  function tipText(p) {
+    const n = kegPetak(p.id_lahan).length;
+    return esc(kecName(p.kec_slug, p.kecamatan)) + ' · Petak #' + p.id_lahan + ' · ' + esc(p.kritis) + ' · ' + fmt(p.luas) + ' Ha' + (n ? ' · ' + n + ' kegiatan' : '');
+  }
+  /* legenda (pojok kanan bawah): hanya kelas yang ada pada tahun yang sedang ditampilkan */
+  function renderLegend() {
+    if (!legendDiv) return;
+    const present = {};
+    Object.values(layers).forEach((l) => { present[l.feature.properties.kritis_class] = true; });
+    let h = ORDER.filter((c) => present[c]).map((c) => '<div><i style="background:' + esc(COL[c]) + '"></i>' + esc(LABEL[c]) + '</div>').join('');
+    if (changed) h += '<div><i style="background:transparent;border:2px solid #1d4ed8"></i>Kelas berubah</div>';
+    legendDiv.innerHTML = h;
+  }
+
+  /* ---------- visualisasi temporal: tahun data pada peta ---------- */
+  function loadYear(y) {
+    if (cache[y]) return Promise.resolve(cache[y]);
+    return fetch(T.geojson + '?tahun=' + y).then((r) => { if (!r.ok) throw new Error('tahun'); return r.json(); }).then((gj) => {
+      const m = {}; gj.features.forEach((f) => { m[f.properties.id_lahan] = f.properties; });
+      cache[y] = m; return m;
+    });
+  }
+  function loadRingkas() {
+    if (ringkas) return Promise.resolve(ringkas);
+    return fetch(T.ringkas).then((r) => r.json()).then((j) => { ringkas = j; return j; });
+  }
+  function setYear(y) {
+    return loadYear(y).then((m) => {
+      curYear = y;
+      Object.keys(layers).forEach((id) => {
+        const p = m[id]; if (!p) return;
+        layers[id].feature.properties = p;
+        layers[id].setTooltipContent(tipText(p));
+      });
+      const lb = $('t-label'); if (lb) lb.textContent = y;
+      const nt = $('t-note'); if (nt) nt.textContent = y === T.utama ? 'Data terbaru' : '';
+      const rg = $('t-range'); if (rg) rg.value = T.tahun.indexOf(y);
+      return updateCompare();
+    }).then(() => {
+      renderLegend();
+      if (selLayer) selectLayer(selLayer); else restyle();
+      apply(false);
+    });
+  }
+  /* kotak perbandingan: tabel luas per kelas pada dua tahun + penanda petak yang kelasnya berubah */
+  function updateCompare() {
+    const box = $('t-compare'); if (!box) return Promise.resolve();
+    if (!cmpYear || cmpYear === curYear) {
+      changed = null; box.hidden = true; box.innerHTML = '';
+      if (cmpYear === curYear && cmpYear) { box.hidden = false; box.innerHTML = '<p>Pilih tahun pembanding yang berbeda dari tahun yang sedang ditampilkan.</p>'; }
+      return Promise.resolve();
+    }
+    const a = Math.min(cmpYear, curYear), b = Math.max(cmpYear, curYear);
+    return Promise.all([loadYear(a), loadYear(b), loadRingkas()]).then((r) => {
+      const ma = r[0], mb = r[1], rg = r[2];
+      changed = new Set();
+      Object.keys(mb).forEach((id) => { if (ma[id] && ma[id].kritis_asli !== mb[id].kritis_asli) changed.add(Number(id)); });
+      const da = rg.data[a] || {}, db = rg.data[b] || {};
+      const kelas = ['tidak', 'potensial', 'agak', 'kritis', 'sangat'].filter((c) => da[c] || db[c]);
+      const ha = (d, c) => (d[c] ? d[c].ha : 0);
+      const dlt = (x) => '<span class="' + (x > 0 ? 'tbar-up' : x < 0 ? 'tbar-down' : '') + '">' + (x > 0 ? '+' : '') + fmt(x) + '</span>';
+      const rows = kelas.map((c) => '<tr><td><i class="tbar-dot" style="background:' + esc(COL[c]) + '"></i>' + esc(LABEL[c]) + '</td><td>' + fmt(ha(da, c)) + '</td><td>' + fmt(ha(db, c)) + '</td><td>' + dlt(Math.round((ha(db, c) - ha(da, c)) * 100) / 100) + '</td></tr>').join('');
+      const tot = (d) => (rg.dihitung || []).reduce((n, c) => n + ha(d, c), 0);
+      const ta = tot(da), tb = tot(db), sel = Math.round((tb - ta) * 100) / 100;
+      const pct = ta > 0 ? (sel / ta * 100) : 0;
+      box.hidden = false;
+      box.innerHTML = '<h4>Perbandingan ' + a + ' &rarr; ' + b + '</h4>' +
+        '<p><b>' + changed.size + ' petak</b> berganti kelas kekritisan (garis biru pada peta). Luas dalam hektare.</p>' +
+        '<div style="overflow-x:auto"><table class="tbar-table"><thead><tr><th>Kelas</th><th>' + a + '</th><th>' + b + '</th><th>Selisih</th></tr></thead><tbody>' + rows + '</tbody>' +
+        '<tfoot><tr><td>Lahan kritis*</td><td>' + fmt(ta) + '</td><td>' + fmt(tb) + '</td><td>' + dlt(sel) + (ta > 0 ? ' (' + (pct > 0 ? '+' : '') + fmt(pct) + '%)' : '') + '</td></tr></tfoot></table></div>' +
+        '<p style="margin:8px 0 0">*Tidak termasuk kelas Tidak Kritis.</p>';
+    }).catch(() => { changed = null; box.hidden = false; box.innerHTML = '<p>Data perbandingan belum dapat dimuat.</p>'; });
+  }
+  function stopPlay() {
+    if (playTimer) { clearInterval(playTimer); playTimer = null; }
+    const ic = $('t-play-ic'), tx = $('t-play-tx'), bt = $('t-play');
+    if (ic) ic.textContent = '▶';
+    if (tx) tx.textContent = 'Putar';
+    if (bt) bt.setAttribute('aria-pressed', 'false');
+  }
+  function startPlay() {
+    const ic = $('t-play-ic'), tx = $('t-play-tx'), bt = $('t-play');
+    if (ic) ic.textContent = '❚❚';
+    if (tx) tx.textContent = 'Jeda';
+    if (bt) bt.setAttribute('aria-pressed', 'true');
+    const last = T.tahun.length - 1;
+    let i = T.tahun.indexOf(curYear);
+    if (i >= last) i = -1;   /* sudah di tahun terakhir: ulang dari awal */
+    const step = () => {
+      i++;
+      setYear(T.tahun[i]);
+      if (i >= last) stopPlay();
+    };
+    step();
+    if (i < last) playTimer = setInterval(step, 1500);
+  }
+
   /* ---------- muat polygon ---------- */
   fetch(el.dataset.geojson).then((r) => r.json()).then(function (gj) {
     const present = {};
@@ -231,8 +336,7 @@
       onEachFeature: function (f, lyr) {
         layers[f.properties.id_lahan] = lyr;
         present[f.properties.kritis_class] = true;
-        const nk_ = kegPetak(f.properties.id_lahan).length;
-        lyr.bindTooltip(esc(kecName(f.properties.kec_slug, f.properties.kecamatan)) + ' · Petak #' + f.properties.id_lahan + ' · ' + esc(f.properties.kritis) + ' · ' + fmt(f.properties.luas) + ' Ha' + (nk_ ? ' · ' + nk_ + ' kegiatan' : ''), { sticky: true, className: 'kec-label' });
+        lyr.bindTooltip(tipText(f.properties), { sticky: true, className: 'kec-label' });
         lyr.on({
           click: () => { selectLayer(lyr); zoomToPetak(lyr); },
           mouseover: () => { if (selLayer !== lyr && f._ok !== false) lyr.setStyle({ fillOpacity: FILL_HOVER }); },
@@ -246,12 +350,15 @@
     /* legenda (pojok kanan bawah): hanya kelas yang ada di data */
     const legend = L.control({ position: 'bottomright' });
     legend.onAdd = function () {
-      const d = L.DomUtil.create('div', 'map-legend-ctl');
-      d.innerHTML = ORDER.filter((c) => present[c]).map((c) => '<div><i style="background:' + esc(COL[c]) + '"></i>' + esc(LABEL[c]) + '</div>').join('');
-      L.DomEvent.disableClickPropagation(d);
-      return d;
+      legendDiv = L.DomUtil.create('div', 'map-legend-ctl');
+      L.DomEvent.disableClickPropagation(legendDiv);
+      return legendDiv;
     };
     legend.addTo(map);
+    renderLegend();
+    if (T) {   /* tahun data utama sudah dimuat; simpan sebagai cache */
+      const m0 = {}; gj.features.forEach((f) => { m0[f.properties.id_lahan] = f.properties; }); cache[T.utama] = m0;
+    }
 
     /* kosongkan filter (browser kadang mengembalikan isian lama) dan jangan pilih apa pun otomatis */
     FILTER_IDS.forEach((id) => { const i = $(id); if (i) i.value = ''; });
@@ -263,6 +370,26 @@
   });
 
   FILTER_IDS.forEach((id) => { const i = $(id); if (i) i.addEventListener('input', () => { clearSelection(); apply(true); }); });
+  if (T) {
+    const rg = $('t-range'), pl = $('t-play'), bd = $('t-banding');
+    if (rg) rg.addEventListener('input', () => { stopPlay(); setYear(T.tahun[Number(rg.value)]); });
+    if (pl) pl.addEventListener('click', () => { if (playTimer) stopPlay(); else startPlay(); });
+    /* tab: "Peta Lahan Kritis" (tahun terbaru) <-> "Visualisasi Temporal" (slider tahun + perbandingan) */
+    const tabs = document.querySelectorAll('[data-mtab]');
+    tabs.forEach((tb) => tb.addEventListener('click', () => {
+      const temporal = tb.dataset.mtab === 'temporal';
+      tabs.forEach((x) => { const on = x === tb; x.classList.toggle('active', on); x.setAttribute('aria-selected', on ? 'true' : 'false'); });
+      TB.hidden = !temporal;
+      if (!temporal) {            /* kembali ke peta biasa: tahun terbaru, tanpa perbandingan */
+        stopPlay();
+        cmpYear = null; changed = null;
+        if (bd) bd.value = '';
+        setYear(T.utama);
+      }
+      setTimeout(() => map.invalidateSize(), 50);
+    }));
+    if (bd) bd.addEventListener('change', () => { cmpYear = bd.value ? Number(bd.value) : null; updateCompare().then(() => { renderLegend(); restyle(); }); });
+  }
   const rs = $('f-reset'); if (rs) rs.addEventListener('click', () => { FILTER_IDS.forEach((id) => { const i = $(id); if (i) i.value = ''; }); clearSelection(); apply(true); });
   document.addEventListener('click', (e) => {
     const r = e.target.closest('.result-item'); if (!r) return;

@@ -22,12 +22,7 @@ class PublicController extends Controller
         $jmlKecData = Catalog::kecamatan()->count();
 
         // Statistik lahan kritis
-        $kritisHa = DataLahan::select(
-                'id_lahan',
-                'kritis',
-                'luas_ha',
-                'sudah_direhabilitasi'
-            )
+        $kritisHa = DataLahan::select('id_lahan', 'kritis', 'luas_ha')
             ->denganRehabilitasi(true)
             ->get()
             ->filter(fn ($l) =>
@@ -48,121 +43,24 @@ class PublicController extends Controller
             ?? config('lahan.bpdas_default');
 
         // ==============================================
-        // DATA VISUALISASI TEMPORAL
-        // ==============================================
-
-        // Validasi sumber data
-        $sumber = $request->query('sumber', 'dummy');
-
-        if (! in_array($sumber, ['asli', 'dummy'], true)) {
-            $sumber = 'dummy';
-        }
-
-        // Ambil tahun yang tersedia sesuai sumber data
-        $tahunList = DB::table('data_lahan_temporal')
-            ->where('data_source', $sumber)
-            ->select('tahun')
-            ->distinct()
-            ->orderBy('tahun')
-            ->pluck('tahun')
-            ->map(fn ($tahun) => (int) $tahun)
-            ->values();
-
-        // Default tahun
-        $tahunAwalDefault = $tahunList->min() ?? 2020;
-        $tahunAkhirDefault = $tahunList->max() ?? 2026;
-
-        // Ambil input tahun dari URL
-        $tahunAwal = (int) $request->query(
-            'tahun_awal',
-            $tahunAwalDefault
-        );
-
-        $tahunAkhir = (int) $request->query(
-            'tahun_akhir',
-            $tahunAkhirDefault
-        );
-
-        // Validasi tahun awal
-        if (! $tahunList->contains($tahunAwal)) {
-            $tahunAwal = $tahunAwalDefault;
-        }
-
-        // Validasi tahun akhir
-        if (! $tahunList->contains($tahunAkhir)) {
-            $tahunAkhir = $tahunAkhirDefault;
-        }
-
-        // Pastikan tahun awal tidak melebihi tahun akhir
-        if ($tahunAwal > $tahunAkhir) {
-            [$tahunAwal, $tahunAkhir] = [
-                $tahunAkhir,
-                $tahunAwal
-            ];
-        }
-
-        // Grafik total luas lahan berdasarkan rentang tahun
-        $grafikTemporal = DB::table('data_lahan_temporal')
-            ->select(
-                'tahun',
-                DB::raw('SUM(luas_ha) as total_luas')
-            )
-            ->where('data_source', $sumber)
-            ->whereBetween('tahun', [
-                $tahunAwal,
-                $tahunAkhir
-            ])
-            ->groupBy('tahun')
-            ->orderBy('tahun')
-            ->get();
-
-        // Total luas tahun awal
-        $totalAwal = DB::table('data_lahan_temporal')
-            ->where('tahun', $tahunAwal)
-            ->where('data_source', $sumber)
-            ->sum('luas_ha');
-
-        // Total luas tahun akhir
-        $totalAkhir = DB::table('data_lahan_temporal')
-            ->where('tahun', $tahunAkhir)
-            ->where('data_source', $sumber)
-            ->sum('luas_ha');
-
-        // Perubahan luas
-        $perubahanLuas = $totalAkhir - $totalAwal;
-
-        // Persentase perubahan
-        $persentasePerubahan = $totalAwal > 0
-            ? ($perubahanLuas / $totalAwal) * 100
-            : 0;
-
-        // Rekap kategori lahan kritis pada tahun akhir
-        $rekapTemporal = DB::table('data_lahan_temporal')
-            ->select(
-                'kritis',
-                DB::raw('SUM(luas_ha) as total_luas')
-            )
-            ->where('tahun', $tahunAkhir)
-            ->where('data_source', $sumber)
-            ->groupBy('kritis')
-            ->orderBy('kritis')
-            ->get();
-
-        // Jumlah data pada tahun akhir
-        $jumlahDataTemporal = DB::table('data_lahan_temporal')
-            ->where('tahun', $tahunAkhir)
-            ->where('data_source', $sumber)
-            ->count();
-
-        // Status ketersediaan data temporal
-        $temporalAdaData = $tahunList->isNotEmpty()
-            && $jumlahDataTemporal > 0;
-
-        // ==============================================
         // DATA UNTUK VIEW
         // ==============================================
 
+        // Tahun yang dapat dipilih pada peta: tahun-tahun riwayat + tahun data utama
+        $tahunUtama = (int) config('lahan.tahun_data', 2026);
+        $tahunList = DB::table('data_lahan_temporal')
+            ->distinct()
+            ->orderBy('tahun')
+            ->pluck('tahun')
+            ->map(fn ($t) => (int) $t)
+            ->push($tahunUtama)
+            ->unique()
+            ->sort()
+            ->values();
+
         return view('pages.landing', [
+            'tahun_list' => $tahunList,
+            'tahun_utama' => $tahunUtama,
             'landing' => [
                 'stats' => [
                     [
@@ -200,26 +98,6 @@ class PublicController extends Controller
             'kelas' => Catalog::kelasRingkas(),
             'status_opts' => config('lahan.status'),
             'app' => Catalog::app($kecamatan, $publik),
-
-            // Data untuk dashboard temporal
-            'temporal' => [
-                'tahunList' => $tahunList,
-                'tahunAwal' => $tahunAwal,
-                'tahunAkhir' => $tahunAkhir,
-                'sumber' => $sumber,
-
-                'grafik' => $grafikTemporal,
-                'rekap' => $rekapTemporal,
-
-                'totalAwal' => (float) $totalAwal,
-                'totalAkhir' => (float) $totalAkhir,
-
-                'perubahanLuas' => (float) $perubahanLuas,
-                'persentasePerubahan' => (float) $persentasePerubahan,
-
-                'jumlahData' => $jumlahDataTemporal,
-                'adaData' => $temporalAdaData,
-            ],
         ]);
     }
 
@@ -228,16 +106,39 @@ class PublicController extends Controller
      */
     public function geojson(Request $request)
     {
-        $fc = [
-            'type' => 'FeatureCollection',
+        $tahunUtama = (int) config('lahan.tahun_data', 2026);
+        $tahun = (int) $request->query('tahun', $tahunUtama);
 
-            'features' => DataLahan::denganRehabilitasi(! auth()->check())
-                ->orderBy('id_lahan')
-                ->get()
-                ->map
-                ->toFeature()
-                ->all(),
-        ];
+        $lahan = DataLahan::denganRehabilitasi(! auth()->check())
+            ->orderBy('id_lahan')
+            ->get();
+
+        if ($tahun === $tahunUtama) {
+            $features = $lahan->map->toFeature()->all();
+        } else {
+            // tahun sebelumnya: kelas dan luas dari riwayat; penanda "telah direhabilitasi" hanya berlaku untuk kondisi terkini
+            $riwayat = DB::table('data_lahan_temporal')->where('tahun', $tahun)->get()->keyBy('id_lahan');
+            abort_if($riwayat->isEmpty(), 404);
+
+            $features = $lahan->map(function ($l) use ($riwayat) {
+                $f = $l->toFeature();
+                if ($r = $riwayat->get($l->id_lahan)) {
+                    $kelas = array_search($r->kritis, config('lahan.kritis'), true);
+                    $f['properties'] = array_merge($f['properties'], [
+                        'kritis'        => $r->kritis,
+                        'kritis_class'  => $kelas === false ? 'tidak' : $kelas,
+                        'kritis_asli'   => $r->kritis,
+                        'rehab'         => false,
+                        'rehab_tanggal' => null,
+                        'luas'          => (float) $r->luas_ha,
+                    ]);
+                }
+
+                return $f;
+            })->all();
+        }
+
+        $fc = ['type' => 'FeatureCollection', 'features' => $features];
 
         $response = response()->json(
             $fc,
@@ -258,6 +159,45 @@ class PublicController extends Controller
         $response->isNotModified($request);
 
         return $response;
+    }
+
+    /**
+     * Ringkasan per tahun (jumlah petak dan luas per kelas kekritisan) untuk perbandingan tahun pada peta.
+     * Dihitung dari data kelas asli, tanpa penanda "telah direhabilitasi".
+     */
+    public function temporal()
+    {
+        $tahunUtama = (int) config('lahan.tahun_data', 2026);
+        $label = config('lahan.kritis');
+        $kelas = fn ($k) => ($c = array_search($k, $label, true)) === false ? 'tidak' : $c;
+        $data = [];
+
+        $isi = function (int $tahun, $baris) use (&$data, $kelas) {
+            foreach ($baris as $b) {
+                $c = $kelas($b->kritis);
+                $data[$tahun][$c]['n'] = ($data[$tahun][$c]['n'] ?? 0) + (int) $b->n;
+                $data[$tahun][$c]['ha'] = round(($data[$tahun][$c]['ha'] ?? 0) + (float) $b->ha, 2);
+            }
+        };
+
+        $isi($tahunUtama, DataLahan::select('kritis', DB::raw('count(*) as n'), DB::raw('sum(luas_ha) as ha'))->groupBy('kritis')->get());
+
+        $riwayat = DB::table('data_lahan_temporal')
+            ->select('tahun', 'kritis', DB::raw('count(*) as n'), DB::raw('sum(luas_ha) as ha'))
+            ->groupBy('tahun', 'kritis')
+            ->get()
+            ->groupBy('tahun');
+        foreach ($riwayat as $tahun => $baris) {
+            $isi((int) $tahun, $baris);
+        }
+        ksort($data);
+
+        return response()->json([
+            'tahun_utama' => $tahunUtama,
+            'tahun'       => array_map('intval', array_keys($data)),
+            'dihitung'    => config('lahan.kritis_dihitung'),
+            'data'        => $data,
+        ]);
     }
 
     /**

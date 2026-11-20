@@ -182,7 +182,7 @@ it('petugas hanya boleh mengubah monitoring miliknya; admin boleh mengubah semua
     $this->actingAs($a)->delete("/monitoring/{$m->id_monitoring}", [], JSONH)->assertForbidden();
     $admin = User::factory()->admin()->create();
     $this->actingAs($admin)->put("/monitoring/{$m->id_monitoring}", $payload + ['catatan' => 'Dikoreksi Admin'], JSONH)->assertOk();
-    expect($m->fresh()->catatan)->toBe('Dikoreksi Admin');
+    expect($m->fresh()->catatan)->toBe('(Admin): Dikoreksi Admin');
     $this->actingAs($admin)->delete("/monitoring/{$m->id_monitoring}", [], JSONH)->assertOk();
     Storage::disk('public')->assertMissing('monitoring/lama.jpg');
 });

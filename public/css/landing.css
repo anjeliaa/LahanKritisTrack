@@ -289,3 +289,33 @@ html{scroll-behavior:smooth}
   .cb-panel{right:0;left:auto;width:min(390px,calc(100vw - 24px));height:min(590px,calc(100vh - 105px))}
   .cb-fab{width:56px;height:56px;border-radius:16px}
 }
+
+/* Tambahan kontrol visualisasi temporal */
+/* Kontrol visualisasi temporal yang menyatu dengan peta publik. */
+.lp .map-temporal-control{padding:18px 20px;background:#f7faf7;border-bottom:1px solid var(--lp-line);display:grid;gap:14px}
+.lp .map-temporal-heading strong{display:block;color:#123b2d;font-size:17px;margin-top:4px}
+.lp .map-temporal-heading p{margin:5px 0 0;color:#64748b;font-size:13px;line-height:1.5}
+.lp .map-temporal-fields{display:flex;align-items:end;gap:10px;flex-wrap:wrap}
+.lp .map-temporal-fields label{display:grid;gap:5px;color:#334155;font-size:12px;font-weight:700;min-width:125px}
+.lp .map-temporal-fields select{height:40px;padding:0 12px;border:1px solid #cbd5d1;border-radius:9px;background:#fff;color:#173d30;font:inherit;min-width:120px}
+.lp .map-temporal-fields button{height:40px;padding:0 15px;border:1px solid #174b37;border-radius:9px;background:#174b37;color:#fff;font-weight:700;cursor:pointer}
+.lp .map-temporal-fields button:hover{background:#0f3929}
+.lp .map-temporal-fields button.is-secondary{background:#fff;color:#174b37}
+.lp .map-temporal-fields button:disabled{opacity:.55;cursor:wait}
+.lp .map-temporal-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#64748b;font-size:12px}
+.lp .temporal-change-legend{display:flex;gap:14px;flex-wrap:wrap}
+.lp .temporal-change-legend span{display:inline-flex;align-items:center;gap:6px}
+.lp .temporal-change-legend i{display:inline-block;width:10px;height:10px;border-radius:50%}
+.lp .temporal-change-legend .is-better{background:#26965d}.lp .temporal-change-legend .is-worse{background:#d94b45}.lp .temporal-change-legend .is-same{background:#89939d}
+@media(max-width:640px){.lp .map-temporal-control{padding:14px}.lp .map-temporal-fields label{flex:1 1 calc(50% - 8px)}.lp .map-temporal-fields select{width:100%}.lp .map-temporal-fields button{flex:1 1 calc(50% - 8px)}}
+
+
+/* Pemisahan mode peta sebaran dan visualisasi temporal */
+.lp .map-view-switch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 16px}
+.lp .map-view-tab{display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:15px 18px;border:1px solid #d8e3dc;border-radius:12px;background:#fff;color:#244536;text-align:left;cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s}
+.lp .map-view-tab-title{font-size:14px;font-weight:800}
+.lp .map-view-tab small{font-size:12px;color:#64748b}
+.lp .map-view-tab.is-active{background:#edf6ef;border-color:#2d7652;box-shadow:inset 0 0 0 1px #2d7652}
+.lp .map-view-tab.is-active small{color:#426b55}
+.lp .map-temporal-control[hidden]{display:none!important}
+@media(max-width:560px){.lp .map-view-switch{grid-template-columns:1fr}.lp .map-view-tab{padding:12px 14px}}

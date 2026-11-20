@@ -1,122 +1,445 @@
+
 /* LahanKritisTrack — widget chatbot layanan masyarakat.
-   Tombol cepat memakai FAQ tetap (tanpa AI); pertanyaan bebas dikirim ke POST /chatbot (ChatbotController → App\Support\Chatbot). */
+   Tombol cepat memakai FAQ tetap.
+   Pertanyaan bebas dikirim ke POST /chatbot.
+   Backend: ChatbotController → App\Support\Chatbot.
+*/
+
 (function () {
-  const root = document.getElementById('chatbot');
-  if (!root) return;
-  const $ = (id) => document.getElementById(id);
-  const fab = $('cb-toggle'), panel = $('cb-panel'), body = $('cb-body'), chips = $('cb-chips'), form = $('cb-form'), input = $('cb-input');
+    'use strict';
 
-  const URL = root.dataset.endpoint, CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
-  const AVATAR = root.dataset.avatar;
-  const history = [];   /* percakapan untuk konteks AI (maks. 8 terakhir dikirim) */
+    const root = document.getElementById('chatbot');
+    if (!root) return;
 
-  const WELCOME = 'Halo! Saya asisten LahanKritisTrack. Saya dapat membantu Anda memahami informasi lahan kritis dan kegiatan rehabilitasi di Kota Bengkulu. Silakan pilih pertanyaan di bawah atau tulis pertanyaan Anda.';
+    const $ = (id) => document.getElementById(id);
 
-  /* FAQ tetap untuk tombol cepat (placeholder, bukan hasil AI) */
-  const FAQ = [
-    { q: 'Apa itu lahan kritis?', a: 'Lahan kritis adalah lahan yang kondisinya sudah menurun sehingga fungsinya sebagai penahan air, penjaga tanah, dan penyedia hasil tanaman berkurang. Pada peta, tingkat kekritisannya dibedakan lewat warna.' },
-    { q: 'Cara membaca peta', a: 'Buka bagian Peta Lahan Kritis, lalu klik area berwarna untuk melihat tingkat kekritisan, luas, dan kegiatan pada petak tersebut. Gunakan filter kecamatan atau tingkat kekritisan di atas peta untuk mempersempit tampilan.', links: [{ t: 'Ke peta', h: '#peta' }] },
-    { q: 'Kegiatan rehabilitasi', a: 'Daftar kegiatan rehabilitasi yang sudah dipublikasikan tersedia di bagian Kegiatan Rehabilitasi. Anda dapat menyaringnya dengan filter status pada peta.', links: [{ t: 'Lihat kegiatan', h: '#kegiatan' }] },
-    { q: 'Hubungi petugas', a: 'Penerusan percakapan ke petugas belum tersedia. Untuk saat ini, silakan hubungi instansi terkait melalui kanal resmi mereka.' }
-  ];
+    const fab = $('cb-toggle');
+    const panel = $('cb-panel');
+    const body = $('cb-body');
+    const chips = $('cb-chips');
+    const form = $('cb-form');
+    const input = $('cb-input');
 
-  const jam = () => new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-
-  function avatarEl() {
-    const img = document.createElement('img');
-    img.className = 'cb-mini'; img.src = AVATAR; img.alt = ''; img.width = 32; img.height = 32;
-    return img;
-  }
-
-  /* FAQ tetap dijawab lokal; selain itu dikirim ke backend. Mengembalikan Promise<{ text, links? }> */
-  function botReply(text) {
-    const hit = FAQ.find((f) => f.q.toLowerCase() === text.trim().toLowerCase());
-    if (hit) return new Promise((resolve) => setTimeout(() => resolve({ text: hit.a, links: hit.links }), 400));
-    const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 30000);
-    return fetch(URL, {
-      method: 'POST', signal: ctrl.signal,
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF || '' },
-      body: JSON.stringify({ message: text, history: history.slice(-8) })
-    }).then(async (res) => {
-      const j = await res.json().catch(() => ({}));
-      if (res.status === 429) {
-        return { text: 'Terlalu banyak pertanyaan dalam waktu singkat. Silakan coba lagi sebentar lagi.' };
-      }
-      if (res.status === 422) {
-        return { text: 'Pertanyaan tidak valid. Tulis pertanyaan singkat (maksimal 500 karakter).' };
-      }
-
-      const answer = typeof j.reply === 'string' ? j.reply : j.text;
-
-      if (!res.ok || typeof answer !== 'string' || !answer.trim()) {
-        return {
-          text: 'Maaf, terjadi gangguan (kode ' + res.status + ')' +
-          (j.message ? ': ' + String(j.message).slice(0, 250) : '.')
-        };
-      }
-
-      return { text: answer };
-
-    }).finally(() => clearTimeout(timer));
-  }
-
-  function bubble(who, text, links) {
-    const row = document.createElement('div'); row.className = 'cb-row ' + who;
-    const b = document.createElement('div'); b.className = 'cb-bubble';
-    const p = document.createElement('p'); p.textContent = text; b.appendChild(p);   /* textContent: aman dari XSS */
-    if (links && links.length) {
-      const l = document.createElement('div'); l.className = 'cb-links';
-      links.forEach((x) => { const a = document.createElement('a'); a.href = x.h; a.textContent = x.t; a.addEventListener('click', () => { if (window.matchMedia('(max-width:560px)').matches) setOpen(false); }); l.appendChild(a); });
-      b.appendChild(l);
+    if (!fab || !panel || !body || !chips || !form || !input) {
+        return;
     }
-    const t = document.createElement('time'); t.textContent = jam(); b.appendChild(t);
-    if (who === 'bot') row.appendChild(avatarEl());
-    row.appendChild(b); body.appendChild(row);
-    body.scrollTop = body.scrollHeight;
-    return row;
-  }
 
-  let busy = false;
-  function typing(on) {
-    const old = $('cb-typing'); if (old) old.remove();
-    if (!on) return;
-    const row = document.createElement('div'); row.className = 'cb-row bot'; row.id = 'cb-typing';
-    row.appendChild(avatarEl());
-    const b = document.createElement('div'); b.className = 'cb-bubble cb-typing';
-    b.setAttribute('aria-label', 'Asisten sedang mengetik');
-    b.innerHTML = '<i></i><i></i><i></i>';
-    row.appendChild(b);
-    body.appendChild(row); body.scrollTop = body.scrollHeight;
-  }
+    const URL = root.dataset.endpoint;
+    const CSRF = document.querySelector(
+        'meta[name="csrf-token"]'
+    )?.content;
 
-  function ask(text) {
-    text = (text || '').trim();
-    if (!text || busy) return;
-    busy = true;
-    bubble('user', text);
-    typing(true);
-    botReply(text).then((r) => { typing(false); bubble('bot', r.text, r.links); history.push({ role: 'user', text }, { role: 'bot', text: r.text }); })
-      .catch(() => { typing(false); bubble('bot', 'Maaf, terjadi gangguan. Silakan coba lagi.'); })
-      .finally(() => { busy = false; });
-  }
+    const AVATAR = root.dataset.avatar;
 
-  function setOpen(open) {
-    panel.hidden = !open;
-    root.classList.toggle('open', open);
-    fab.setAttribute('aria-expanded', String(open));
-    fab.setAttribute('aria-label', open ? 'Tutup chat bantuan' : 'Buka chat bantuan');
-    if (open) { if (!body.children.length) bubble('bot', WELCOME); setTimeout(() => input.focus(), 50); }
-    else fab.focus();
-  }
+    const history = [];
 
-  FAQ.forEach((f) => {
-    const c = document.createElement('button'); c.type = 'button'; c.className = 'cb-chip'; c.textContent = f.q;
-    c.addEventListener('click', () => ask(f.q));
-    chips.appendChild(c);
-  });
+    const WELCOME =
+        'Halo! Saya asisten LahanKritisTrack. Saya dapat membantu Anda memahami informasi lahan kritis dan kegiatan rehabilitasi di Kota Bengkulu. Silakan pilih pertanyaan di bawah atau tulis pertanyaan Anda.';
 
-  fab.addEventListener('click', () => setOpen(panel.hidden));
-  root.querySelector('[data-cb-close]').addEventListener('click', () => setOpen(false));
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !panel.hidden) setOpen(false); });
-  form.addEventListener('submit', (e) => { e.preventDefault(); const v = input.value; input.value = ''; ask(v); });
+    const FAQ = [
+        {
+            q: 'Apa itu lahan kritis?',
+            a: 'Lahan kritis adalah lahan yang kondisinya sudah menurun sehingga fungsinya sebagai penahan air, penjaga tanah, dan penyedia hasil tanaman berkurang. Pada peta, tingkat kekritisannya dibedakan lewat warna.'
+        },
+        {
+            q: 'Cara membaca peta',
+            a: 'Buka bagian Peta Lahan Kritis, lalu klik area berwarna untuk melihat tingkat kekritisan, luas, dan kegiatan pada petak tersebut. Gunakan filter kecamatan atau tingkat kekritisan di atas peta untuk mempersempit tampilan.',
+            links: [
+                { t: 'Ke peta', h: '#peta' }
+            ]
+        },
+        {
+            q: 'Kegiatan rehabilitasi',
+            a: 'Daftar kegiatan rehabilitasi yang sudah dipublikasikan tersedia di bagian Kegiatan Rehabilitasi. Anda dapat menyaringnya dengan filter status pada peta.',
+            links: [
+                { t: 'Lihat kegiatan', h: '#kegiatan' }
+            ]
+        },
+        {
+            q: 'Hubungi petugas',
+            a: 'Penerusan percakapan ke petugas belum tersedia. Untuk saat ini, silakan hubungi instansi terkait melalui kanal resmi mereka.'
+        }
+    ];
+
+    const jam = () => new Date().toLocaleTimeString(
+        'id-ID',
+        {
+            hour: '2-digit',
+            minute: '2-digit'
+        }
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Avatar
+    |--------------------------------------------------------------------------
+    */
+
+    function avatarEl() {
+        const img = document.createElement('img');
+
+        img.className = 'cb-mini';
+        img.src = AVATAR;
+        img.alt = '';
+        img.width = 32;
+        img.height = 32;
+
+        return img;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mengambil Jawaban Chatbot
+    |--------------------------------------------------------------------------
+    */
+
+    async function botReply(text) {
+        const hit = FAQ.find(
+            (f) => f.q.toLowerCase() === text.trim().toLowerCase()
+        );
+
+        if (hit) {
+            await new Promise((resolve) => setTimeout(resolve, 400));
+
+            return {
+                text: hit.a,
+                links: hit.links || []
+            };
+        }
+
+        const ctrl = new AbortController();
+
+        const timer = setTimeout(
+            () => ctrl.abort(),
+            60000
+        );
+
+        try {
+            const res = await fetch(URL, {
+                method: 'POST',
+                signal: ctrl.signal,
+
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': CSRF || ''
+                },
+
+                body: JSON.stringify({
+                    message: text,
+                    history: history.slice(-8)
+                })
+            });
+
+            const j = await res.json().catch(() => ({}));
+
+            if (res.status === 429) {
+                return {
+                    text: 'Terlalu banyak pertanyaan dalam waktu singkat. Silakan coba lagi sebentar lagi.'
+                };
+            }
+
+            if (res.status === 422) {
+                return {
+                    text: 'Pertanyaan tidak valid. Tulis pertanyaan singkat (maksimal 500 karakter).'
+                };
+            }
+
+            const answer =
+                typeof j.reply === 'string'
+                    ? j.reply
+                    : j.text;
+
+            if (!res.ok || typeof answer !== 'string' || !answer.trim()) {
+                return {
+                    text:
+                        'Maaf, terjadi gangguan (kode ' +
+                        res.status +
+                        ')' +
+                        (j.message
+                            ? ': ' + String(j.message).slice(0, 250)
+                            : '.')
+                };
+            }
+
+            // Gunakan seluruh teks yang dikirim backend.
+            return {
+                text: answer,
+                links: Array.isArray(j.links) ? j.links : []
+            };
+
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                return {
+                    text: 'Waktu tunggu jawaban terlalu lama. Silakan coba kembali.'
+                };
+            }
+
+            throw error;
+
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Membuat Bubble Chat
+    |--------------------------------------------------------------------------
+    */
+
+    function bubble(who, text, links) {
+        const row = document.createElement('div');
+
+        row.className = 'cb-row ' + who;
+
+        const b = document.createElement('div');
+
+        b.className = 'cb-bubble';
+
+        const p = document.createElement('p');
+
+        // Menampilkan seluruh teks tanpa memotong respons.
+        p.textContent = String(text ?? '');
+
+        b.appendChild(p);
+
+        if (Array.isArray(links) && links.length) {
+            const l = document.createElement('div');
+
+            l.className = 'cb-links';
+
+            links.forEach((x) => {
+                if (!x || !x.h || !x.t) return;
+
+                const a = document.createElement('a');
+
+                a.href = x.h;
+                a.textContent = x.t;
+
+                a.addEventListener('click', () => {
+                    if (
+                        window.matchMedia('(max-width:560px)').matches
+                    ) {
+                        setOpen(false);
+                    }
+                });
+
+                l.appendChild(a);
+            });
+
+            if (l.children.length) {
+                b.appendChild(l);
+            }
+        }
+
+        const t = document.createElement('time');
+
+        t.textContent = jam();
+
+        b.appendChild(t);
+
+        if (who === 'bot') {
+            row.appendChild(avatarEl());
+        }
+
+        row.appendChild(b);
+
+        body.appendChild(row);
+
+        body.scrollTop = body.scrollHeight;
+
+        return row;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Indikator Mengetik
+    |--------------------------------------------------------------------------
+    */
+
+    function typing(on) {
+        const old = $('cb-typing');
+
+        if (old) {
+            old.remove();
+        }
+
+        if (!on) return;
+
+        const row = document.createElement('div');
+
+        row.className = 'cb-row bot';
+        row.id = 'cb-typing';
+
+        row.appendChild(avatarEl());
+
+        const b = document.createElement('div');
+
+        b.className = 'cb-bubble cb-typing';
+
+        b.setAttribute(
+            'aria-label',
+            'Asisten sedang mengetik'
+        );
+
+        b.innerHTML = '<i></i><i></i><i></i>';
+
+        row.appendChild(b);
+
+        body.appendChild(row);
+
+        body.scrollTop = body.scrollHeight;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mengirim Pertanyaan
+    |--------------------------------------------------------------------------
+    */
+
+    let busy = false;
+
+    function ask(text) {
+        text = (text || '').trim();
+
+        if (!text || busy) return;
+
+        busy = true;
+
+        bubble('user', text);
+
+        typing(true);
+
+        botReply(text)
+            .then((r) => {
+                typing(false);
+
+                const answer = String(r.text || '').trim();
+
+                bubble('bot', answer, r.links);
+
+                history.push(
+                    {
+                        role: 'user',
+                        text: text
+                    },
+                    {
+                        role: 'bot',
+                        text: answer
+                    }
+                );
+
+                // Batasi riwayat lokal agar tidak terus bertambah.
+                if (history.length > 16) {
+                    history.splice(0, history.length - 16);
+                }
+            })
+            .catch((error) => {
+                typing(false);
+
+                console.error(
+                    'Chatbot error:',
+                    error
+                );
+
+                bubble(
+                    'bot',
+                    'Maaf, terjadi gangguan saat mengambil jawaban. Silakan coba lagi.'
+                );
+            })
+            .finally(() => {
+                busy = false;
+            });
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Buka dan Tutup Chatbot
+    |--------------------------------------------------------------------------
+    */
+
+    function setOpen(open) {
+        panel.hidden = !open;
+
+        root.classList.toggle('open', open);
+
+        fab.setAttribute(
+            'aria-expanded',
+            String(open)
+        );
+
+        fab.setAttribute(
+            'aria-label',
+            open
+                ? 'Tutup chat bantuan'
+                : 'Buka chat bantuan'
+        );
+
+        if (open) {
+            if (!body.children.length) {
+                bubble('bot', WELCOME);
+            }
+
+            setTimeout(() => input.focus(), 50);
+
+        } else {
+            fab.focus();
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tombol FAQ
+    |--------------------------------------------------------------------------
+    */
+
+    FAQ.forEach((f) => {
+        const c = document.createElement('button');
+
+        c.type = 'button';
+        c.className = 'cb-chip';
+        c.textContent = f.q;
+
+        c.addEventListener('click', () => {
+            ask(f.q);
+        });
+
+        chips.appendChild(c);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Event Listener
+    |--------------------------------------------------------------------------
+    */
+
+    fab.addEventListener('click', () => {
+        setOpen(panel.hidden);
+    });
+
+    const closeButton = root.querySelector('[data-cb-close]');
+
+    if (closeButton) {
+        closeButton.addEventListener('click', () => {
+            setOpen(false);
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !panel.hidden) {
+            setOpen(false);
+        }
+    });
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const value = input.value;
+
+        input.value = '';
+
+        ask(value);
+    });
+
 })();

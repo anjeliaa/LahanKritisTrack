@@ -67,4 +67,7 @@ return [
     'role' => ['admin' => 'Admin', 'petugas' => 'Petugas'],
 
     'bpdas_default' => 'Ketahun',
+
+    // Tahun data utama (tabel data_lahan). Tahun-tahun sebelumnya dibaca dari tabel data_lahan_temporal.
+    'tahun_data' => 2026,
 ];
