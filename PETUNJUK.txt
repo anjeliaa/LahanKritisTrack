@@ -1,0 +1,49 @@
+PERBAIKAN VISUALISASI TEMPORAL LAHANKRITISTRACK
+
+ISI PAKET (file yang perlu ditambahkan/diganti)
+1. app/Http/Controllers/TemporalController.php
+2. database/seeders/DataLahanTemporalSeeder.php
+3. routes/web.php
+4. resources/views/pages/landing.blade.php
+5. public/js/map.js
+6. public/css/landing.css
+
+KONSEP DATA
+- GeoJSON dasar tetap menjadi sumber geometri, ID petak, kecamatan, dan luas.
+- File GeoJSON tidak perlu diunggah ulang untuk setiap tahun.
+- Seeder membuat snapshot untuk seluruh petak yang ada di tabel data_lahan.
+- Tahun 2022-2025 adalah skenario simulasi terstruktur untuk kebutuhan pengujian visualisasi temporal.
+- Tahun 2026 disalin dari atribut kategori dan luas data_lahan saat ini.
+- Luas dan geometri dipertahankan sama; atribut kategori kekritisan yang berubah.
+- Seeder menghapus snapshot simulasi lama (data_source=dummy), lalu membangun ulang snapshot 2022-2025. Snapshot asli tahun 2026 diperbarui.
+- Data simulasi bukan catatan pengukuran historis aktual. Jelaskan hal ini pada laporan/dokumentasi proyek.
+
+CARA MEMASANG
+1. Backup folder proyek dan database terlebih dahulu.
+2. Ekstrak ZIP.
+3. Salin folder/file di dalam paket ke root proyek Laravel, izinkan replace untuk keenam file tersebut.
+4. Pastikan GeoJSON sudah pernah diimpor dan tabel data_lahan berisi seluruh polygon.
+5. Jalankan:
+
+   php artisan migrate
+   php artisan db:seed --class=DataLahanTemporalSeeder
+   php artisan optimize:clear
+
+6. Buka halaman beranda, lakukan hard refresh (Ctrl+F5), lalu scroll ke bagian peta.
+7. Pilih tahun awal dan tahun akhir, klik Bandingkan tahun.
+
+ARTI WARNA PERUBAHAN
+- Hijau: kategori kekritisan membaik (bergerak ke kelas yang lebih ringan).
+- Merah: kategori kekritisan memburuk (bergerak ke kelas yang lebih berat).
+- Abu-abu: kategori tidak berubah.
+
+CATATAN PENTING
+- Jangan menjalankan migrate:fresh karena akan menghapus seluruh tabel/data.
+- Seeder hanya membangun ulang baris data_lahan_temporal dengan data_source=dummy dan menyinkronkan snapshot 2026. Seeder tidak mengubah data_lahan atau geometri GeoJSON.
+- Data tahun 2022-2025 dibentuk dengan pola offset kategori yang eksplisit berdasarkan kelompok ID petak (bukan crc32/angka acak). Pola ini hanya skenario teknis untuk menampilkan perubahan pada seluruh petak.
+- Pastikan dosen pembimbing menyetujui rentang tahun dan pola skenario sebelum menyebutnya sebagai simulasi pada laporan.
+
+PEMERIKSAAN
+- JavaScript diperiksa dengan node --check.
+- File PHP diperiksa dengan php -l.
+- Pengujian runtime Laravel dan database perlu dilakukan di komputer proyek karena lingkungan database lokal pengguna tidak tersedia di sini.

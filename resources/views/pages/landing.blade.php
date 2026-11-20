@@ -247,7 +247,7 @@
             {{-- FILTER PETA --}}
             @include('partials.map-filter', ['kritisFilter' => $kritis_opts])
 
-            {{-- TAHUN DATA (tampil hanya di tab Visualisasi Temporal) --}}
+            {{-- TAHUN DATA (kontrol di atas peta; tampil hanya di tab Visualisasi Temporal) --}}
             @include('partials.map-temporal', ['tahunList' => $tahun_list, 'tahunUtama' => $tahun_utama])
 
             {{-- PETA LEAFLET --}}
@@ -292,7 +292,7 @@
                         </div>
                     </div>
 
-                    <div class="info-card" style="padding:16px">
+                    <div class="info-card" id="kec-kegiatan-card" style="padding:16px">
                         <h3 style="font-size:12px" id="kec-kegiatan-title">
                             Kegiatan Rehabilitasi Terbuka
                         </h3>
@@ -303,6 +303,9 @@
                     @include('partials.map-result-list')
                 </div>
             </div>
+
+            {{-- GRAFIK TEMPORAL (di bawah peta; tampil hanya di tab Visualisasi Temporal) --}}
+            @include('partials.map-temporal-charts', ['tahunList' => $tahun_list])
         </div>
     </div>
 </section>
@@ -448,6 +451,7 @@
 @push('scripts')
 <script>window.APP = @json($app);</script>
 
+<script src="{{ asset('vendor/chartjs/chart.umd.js') }}"></script>
 <script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
 <script src="{{ asset('js/map.js') }}"></script>
 @endpush

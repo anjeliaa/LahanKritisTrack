@@ -2,56 +2,56 @@
 
 namespace Database\Seeders;
 
+use App\Support\LahanImporter;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Riwayat kekritisan per petak untuk tahun-tahun sebelum tahun data utama.
+ * Riwayat kekritisan per petak untuk tahun-tahun sebelum tahun data utama (visualisasi temporal pada peta).
  *
- * Data tahun-tahun lama belum tersedia dari sumber resmi, sehingga dibentuk dari
- * salinan data tahun utama dengan nilai yang diubah agar perubahannya dapat dilihat
- * pada peta. Hasilnya deterministik (berdasarkan id petak), jadi seeder aman dijalankan ulang.
- *
- * Aturannya: sebagian petak berganti kelas SATU kali pada tahun tertentu (memburuk atau membaik
- * menuju kondisi tahun utama), dan luas tiap petak bergeser sedikit per tahun.
+ * Datanya dibaca dari berkas GeoJSON per tahun di database/seeders/data/temporal/lahan_kritis_{tahun}.geojson
+ * (bentuknya sama dengan lahan_kritis.geojson). Berkas-berkas itu adalah salinan data tahun utama dengan
+ * nilai kelas kekritisan dan luas yang diubah, karena data tahun-tahun lama belum tersedia dari sumber resmi.
+ * Untuk memakai data asli, cukup ganti isi berkasnya (properti kritis dan luas_ha) lalu jalankan seeder ini lagi.
+ * Petak dicocokkan dengan data_lahan lewat pasangan (objectid, kecamatan).
  */
 class DataLahanTemporalSeeder extends Seeder
 {
-    public const TAHUN_AWAL = 2020;
-
     public function run(): void
     {
         $tahunUtama = (int) config('lahan.tahun_data', 2026);
-        $label = array_values(config('lahan.kritis'));   // urut dari paling ringan
-        $maks = 3;                                       // data hanya memuat empat kelas pertama
+
+        $peta = [];   // "objectid|kecamatan_id" => id_lahan
+        foreach (DB::table('data_lahan')->get(['id_lahan', 'objectid', 'kecamatan_id']) as $l) {
+            $peta[$l->objectid.'|'.$l->kecamatan_id] = $l->id_lahan;
+        }
 
         $baris = [];
         $now = now();
 
-        foreach (DB::table('data_lahan')->orderBy('id_lahan')->get(['id_lahan', 'kritis', 'luas_ha']) as $l) {
-            $lv = array_search($l->kritis, $label, true);
-            if ($lv === false) {
+        foreach (glob(__DIR__.'/data/temporal/lahan_kritis_*.geojson') ?: [] as $berkas) {
+            if (! preg_match('/lahan_kritis_(\d{4})\.geojson$/', $berkas, $m) || (int) $m[1] >= $tahunUtama) {
                 continue;
             }
+            $tahun = (int) $m[1];
+            $json = json_decode(file_get_contents($berkas), true);
 
-            // arah perubahan menuju tahun utama: +1 memburuk, -1 membaik, 0 tetap
-            $arah = [0 => 1, 1 => 1, 2 => -1, 3 => -1][crc32("arah-{$l->id_lahan}") % 8] ?? 0;
-            $awal = $lv - $arah;
-            if ($awal < 0 || $awal > $maks) {
-                $arah = 0;
-                $awal = $lv;
-            }
-            // kelas berganti pada tahun ini (sebelumnya masih kelas $awal)
-            $tahunUbah = self::TAHUN_AWAL + 1 + (crc32("thn-{$l->id_lahan}") % ($tahunUtama - self::TAHUN_AWAL));
-            // pergeseran luas per tahun: -1,5% sampai +1,5%
-            $geser = ((crc32("lua-{$l->id_lahan}") % 7) - 3) / 200;
+            foreach ($json['features'] ?? [] as $f) {
+                $p = array_change_key_case((array) ($f['properties'] ?? []), CASE_LOWER);
+                $kec = LahanImporter::kecamatanId($p);
+                $kritis = LahanImporter::kritisLabel($p['kritis'] ?? null);
+                $id = $peta[($p['objectid'] ?? '').'|'.$kec] ?? null;
 
-            for ($t = self::TAHUN_AWAL; $t < $tahunUtama; $t++) {
+                if ($id === null || $kritis === null || ! is_numeric($p['luas_ha'] ?? null)) {
+                    $this->command?->warn("{$tahun}: satu petak dilewati (tidak cocok dengan data_lahan).");
+                    continue;
+                }
+
                 $baris[] = [
-                    'id_lahan'   => $l->id_lahan,
-                    'tahun'      => $t,
-                    'kritis'     => $label[$t < $tahunUbah ? $awal : $lv],
-                    'luas_ha'    => max(0, round($l->luas_ha * (1 + $geser * ($t - $tahunUtama)), 2)),
+                    'id_lahan'   => $id,
+                    'tahun'      => $tahun,
+                    'kritis'     => $kritis,
+                    'luas_ha'    => round((float) $p['luas_ha'], 2),
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
@@ -63,6 +63,6 @@ class DataLahanTemporalSeeder extends Seeder
             DB::table('data_lahan_temporal')->insert($paket);
         }
 
-        $this->command?->info('Riwayat kekritisan ' . self::TAHUN_AWAL . '–' . ($tahunUtama - 1) . ' dimuat: ' . count($baris) . ' baris.');
+        $this->command?->info('Riwayat kekritisan dimuat dari GeoJSON: '.count($baris).' baris.');
     }
 }

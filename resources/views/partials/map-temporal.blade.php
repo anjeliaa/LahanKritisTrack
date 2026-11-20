@@ -1,4 +1,4 @@
-{{-- Tahun data pada peta (visualisasi temporal). Dipakai public/js/map.js.
+{{-- Tahun data pada peta (visualisasi temporal), bagian kontrol (tahun, putar, banding, slider) tetap di atas peta; grafik ada di partial map-temporal-charts. Dipakai public/js/map.js.
      Variabel: $tahunList (koleksi tahun, urut naik), $tahunUtama (tahun data terbaru) --}}
 @if($tahunList->count() > 1)
 <div class="tbar" id="t-bar" role="tabpanel" aria-labelledby="tab-temporal" hidden
@@ -39,12 +39,12 @@
         </div>
     </div>
 
-    <div class="tbar-cmp-box" id="t-compare" hidden aria-live="polite"></div>
+
 </div>
 
 <style>
-    .tbar[hidden]{display:none}
-    .tbar{margin:0 0 16px;padding:16px 18px;background:#f6f8f6;border:1px solid #e2e9e4;border-radius:14px}
+    .tbar[hidden],.tcharts[hidden],#kec-kegiatan-card[hidden]{display:none!important}
+    .tbar{margin:0 0 14px;padding:16px 20px;background:#f6f8f6;border:1px solid #e2e9e4;border-radius:14px}
     .tbar-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
     .tbar-title{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
     .tbar-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#64748b}
@@ -52,29 +52,41 @@
     .tbar-note{font-size:12px;color:#64748b}
     .tbar-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
     .tbar-play{height:38px;min-width:92px}
-    .tbar-cmp{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#334155}
-    .tbar-cmp .select{height:38px;min-width:150px}
+    .tbar-cmp{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#334155;white-space:nowrap}
+    .tbar .tbar-cmp .select{height:38px;width:auto;min-width:190px;line-height:normal;padding:0 34px 0 12px;box-sizing:border-box}
     .tbar-slider{margin-top:12px}
     .tbar-slider input[type=range]{width:100%;accent-color:#0c3a2b;cursor:pointer}
     .tbar-ticks{display:flex;justify-content:space-between;font-size:11px;color:#64748b;font-variant-numeric:tabular-nums;margin-top:2px}
-    .tbar-cmp-box{margin-top:14px;padding-top:14px;border-top:1px solid #e2e9e4}
-    .tbar-cmp-box h4{margin:0 0 4px;font-size:14px;color:#0c3a2b}
-    .tbar-cmp-box p{margin:0 0 10px;font-size:12px;color:#64748b}
-    .tbar-table{width:100%;border-collapse:collapse;font-size:12.5px}
-    .tbar-table th,.tbar-table td{padding:7px 10px;text-align:right;border-bottom:1px solid #e2e9e4;font-variant-numeric:tabular-nums}
-    .tbar-table th:first-child,.tbar-table td:first-child{text-align:left}
-    .tbar-table thead th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#64748b}
-    .tbar-table tfoot td{font-weight:700;border-bottom:0}
+
+    /* grafik: dua kartu sejajar di bawah peta */
+    .tcharts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:16px 0 0;align-items:stretch}
+    .tcard{background:#fff;border:1px solid #e2e9e4;border-radius:14px;padding:16px 18px;min-width:0;display:flex;flex-direction:column}
+    .tcard-trend{grid-column:1;grid-row:1}
+    .tcard-cmp{grid-column:2;grid-row:1}
+    .tcard h4{margin:0 0 4px;font-size:14px;color:#0c3a2b}
+    .tcard p{margin:0 0 12px;font-size:12px;color:#64748b}
+    .tcard-cmp[hidden]{display:flex;align-items:center;justify-content:center;text-align:center;background:#f6f8f6;border-style:dashed;border-color:#cbd5d0}
+    .tcard-cmp[hidden]:empty::before{content:"Pilih tahun pada \"Bandingkan dengan\" untuk menampilkan perbandingan di sini.";max-width:240px;font-size:13px;line-height:1.5;color:#64748b}
+    .tbar-chart{position:relative;height:280px}
+    .tbar-chart-sm{height:200px}
+    .tbar-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 12px}
+    .tbar-stats>div{background:#f6f8f6;border:1px solid #e2e9e4;border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+    .tbar-stats span{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:#64748b}
+    .tbar-stats b{font-size:16px;color:#0c3a2b;font-variant-numeric:tabular-nums}
+    .tbar-stats small{font-size:11px;color:#64748b}
+    .tbar-foot{margin:10px 0 0!important}
+    .tbar-stats small.tbar-up,.tbar-stats small.tbar-down{font-weight:700}
     .tbar-up{color:#b45309}
     .tbar-down{color:#15803d}
-    .tbar-dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.25)}
-    @media (max-width:640px){
+    @media (max-width:820px){
         .tbar{padding:14px}
         .tbar-actions{width:100%}
-        .tbar-cmp{width:100%;justify-content:space-between}
-        .tbar-cmp .select{flex:1}
-        .tbar-table{font-size:11.5px}
-        .tbar-table th,.tbar-table td{padding:6px 6px}
+        .tbar-cmp{flex:1;white-space:normal}
+        .tbar .tbar-cmp .select{flex:1;min-width:0}
+        .tcharts{grid-template-columns:minmax(0,1fr)}
+        .tcard-trend,.tcard-cmp{grid-column:1;grid-row:auto}
+        .tcard-trend{order:1}.tcard-cmp{order:2}
+        .tcard-cmp[hidden]{min-height:110px}
     }
 </style>
 @endif

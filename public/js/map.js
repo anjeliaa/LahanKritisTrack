@@ -267,6 +267,7 @@
       const lb = $('t-label'); if (lb) lb.textContent = y;
       const nt = $('t-note'); if (nt) nt.textContent = y === T.utama ? 'Data terbaru' : '';
       const rg = $('t-range'); if (rg) rg.value = T.tahun.indexOf(y);
+      drawTren();
       return updateCompare();
     }).then(() => {
       renderLegend();
@@ -274,11 +275,50 @@
       apply(false);
     });
   }
+  /* ---------- grafik (Chart.js) ---------- */
+  let chTren = null, chBand = null;
+  const KRIT = ['potensial', 'agak', 'kritis', 'sangat'];   /* urut dari paling ringan */
+  const kelasKritis = (rg) => KRIT.filter((c) => (rg.dihitung || []).indexOf(c) >= 0 && rg.tahun.some((y) => rg.data[y] && rg.data[y][c]));
+  function destroyBand() { if (chBand) { chBand.destroy(); chBand = null; } }
+  function chartOpt(extra) {
+    const o = {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      scales: { x: { grid: { display: false } }, y: { beginAtZero: true, title: { display: true, text: 'Luas (ha)' }, ticks: { callback: (v) => fmt(v) } } },
+      plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: (c) => c.dataset.label + ': ' + fmt(c.parsed.y) + ' ha' } } },
+    };
+    return Object.assign(o, extra, { plugins: Object.assign(o.plugins, (extra || {}).plugins) });
+  }
+  /* tren luas lahan kritis per tahun (tumpuk per kelas); tahun yang sedang tampil di peta ditebalkan */
+  function drawTren() {
+    const cv = $('t-chart-tren'); if (!cv || !window.Chart) return Promise.resolve();
+    return loadRingkas().then((rg) => {
+      const kelas = kelasKritis(rg);
+      /* warna batang = warna kelas di peta (tanpa transparansi); tahun yang sedang tampil diberi garis tepi gelap */
+      const warna = (c) => rg.tahun.map(() => COL[c]);
+      const tepi = () => rg.tahun.map((y) => (y === curYear ? '#0f172a' : 'rgba(0,0,0,0)'));
+      const lebar = () => rg.tahun.map((y) => (y === curYear ? 2 : 0));
+      if (chTren) {
+        chTren.data.datasets.forEach((d, i) => { d.backgroundColor = warna(kelas[i]); d.borderColor = tepi(); d.borderWidth = lebar(); });
+        chTren.update('none');
+        return;
+      }
+      chTren = new Chart(cv, {
+        type: 'bar',
+        data: { labels: rg.tahun.map(String), datasets: kelas.map((c) => ({ label: LABEL[c], data: rg.tahun.map((y) => (rg.data[y] && rg.data[y][c] ? rg.data[y][c].ha : 0)), backgroundColor: warna(c), borderColor: tepi(), borderWidth: lebar(), stack: 'ha' })) },
+        options: chartOpt({
+          scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Luas (ha)' }, ticks: { callback: (v) => fmt(v) } } },
+          onClick: (e, els) => { if (els.length) { stopPlay(); setYear(rg.tahun[els[0].index]); } },
+          onHover: (e, els) => { e.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
+        }),
+      });
+    });
+  }
   /* kotak perbandingan: tabel luas per kelas pada dua tahun + penanda petak yang kelasnya berubah */
   function updateCompare() {
     const box = $('t-compare'); if (!box) return Promise.resolve();
     if (!cmpYear || cmpYear === curYear) {
-      changed = null; box.hidden = true; box.innerHTML = '';
+      changed = null; destroyBand(); box.hidden = true; box.innerHTML = '';
       if (cmpYear === curYear && cmpYear) { box.hidden = false; box.innerHTML = '<p>Pilih tahun pembanding yang berbeda dari tahun yang sedang ditampilkan.</p>'; }
       return Promise.resolve();
     }
@@ -288,19 +328,32 @@
       changed = new Set();
       Object.keys(mb).forEach((id) => { if (ma[id] && ma[id].kritis_asli !== mb[id].kritis_asli) changed.add(Number(id)); });
       const da = rg.data[a] || {}, db = rg.data[b] || {};
-      const kelas = ['tidak', 'potensial', 'agak', 'kritis', 'sangat'].filter((c) => da[c] || db[c]);
       const ha = (d, c) => (d[c] ? d[c].ha : 0);
-      const dlt = (x) => '<span class="' + (x > 0 ? 'tbar-up' : x < 0 ? 'tbar-down' : '') + '">' + (x > 0 ? '+' : '') + fmt(x) + '</span>';
-      const rows = kelas.map((c) => '<tr><td><i class="tbar-dot" style="background:' + esc(COL[c]) + '"></i>' + esc(LABEL[c]) + '</td><td>' + fmt(ha(da, c)) + '</td><td>' + fmt(ha(db, c)) + '</td><td>' + dlt(Math.round((ha(db, c) - ha(da, c)) * 100) / 100) + '</td></tr>').join('');
+      const kelas = kelasKritis(rg);
       const tot = (d) => (rg.dihitung || []).reduce((n, c) => n + ha(d, c), 0);
       const ta = tot(da), tb = tot(db), sel = Math.round((tb - ta) * 100) / 100;
       const pct = ta > 0 ? (sel / ta * 100) : 0;
+      const arah = sel < 0 ? 'tbar-down' : sel > 0 ? 'tbar-up' : '';
+      destroyBand();
       box.hidden = false;
       box.innerHTML = '<h4>Perbandingan ' + a + ' &rarr; ' + b + '</h4>' +
-        '<p><b>' + changed.size + ' petak</b> berganti kelas kekritisan (garis biru pada peta). Luas dalam hektare.</p>' +
-        '<div style="overflow-x:auto"><table class="tbar-table"><thead><tr><th>Kelas</th><th>' + a + '</th><th>' + b + '</th><th>Selisih</th></tr></thead><tbody>' + rows + '</tbody>' +
-        '<tfoot><tr><td>Lahan kritis*</td><td>' + fmt(ta) + '</td><td>' + fmt(tb) + '</td><td>' + dlt(sel) + (ta > 0 ? ' (' + (pct > 0 ? '+' : '') + fmt(pct) + '%)' : '') + '</td></tr></tfoot></table></div>' +
-        '<p style="margin:8px 0 0">*Tidak termasuk kelas Tidak Kritis.</p>';
+        '<div class="tbar-stats">' +
+          '<div><span>Petak berganti kelas</span><b>' + changed.size + '</b><small>garis biru pada peta</small></div>' +
+          '<div><span>Total lahan kritis ' + a + '</span><b>' + fmt(ta) + ' ha</b><small>tanpa Tidak Kritis</small></div>' +
+          '<div><span>Total lahan kritis ' + b + '</span><b>' + fmt(tb) + ' ha</b><small class="' + arah + '">' + (sel > 0 ? '+' : '') + fmt(sel) + ' ha' + (ta > 0 ? ' (' + (pct > 0 ? '+' : '') + fmt(pct) + '%)' : '') + '</small></div>' +
+        '</div>' +
+        '<div class="tbar-chart tbar-chart-sm"><canvas id="t-chart-banding" role="img" aria-label="Perbandingan luas per kelas kekritisan tahun ' + a + ' dan ' + b + '"></canvas></div>' +
+        '<p class="tbar-foot">Total mencakup kelas Potensial Kritis, Agak Kritis, Kritis, dan Sangat Kritis.</p>';
+      if (window.Chart) {
+        chBand = new Chart($('t-chart-banding'), {
+          type: 'bar',
+          data: { labels: kelas.map((c) => LABEL[c]), datasets: [
+            { label: String(a), data: kelas.map((c) => ha(da, c)), backgroundColor: '#9db8a8', borderRadius: 4 },
+            { label: String(b), data: kelas.map((c) => ha(db, c)), backgroundColor: '#0c3a2b', borderRadius: 4 },
+          ] },
+          options: chartOpt({ plugins: { legend: { position: 'bottom' } } }),
+        });
+      }
     }).catch(() => { changed = null; box.hidden = false; box.innerHTML = '<p>Data perbandingan belum dapat dimuat.</p>'; });
   }
   function stopPlay() {
@@ -380,6 +433,9 @@
       const temporal = tb.dataset.mtab === 'temporal';
       tabs.forEach((x) => { const on = x === tb; x.classList.toggle('active', on); x.setAttribute('aria-selected', on ? 'true' : 'false'); });
       TB.hidden = !temporal;
+      const TC = $('t-charts'); if (TC) TC.hidden = !temporal;                       /* grafik di bawah peta */
+      const kc = $('kec-kegiatan-card'); if (kc) kc.hidden = temporal;               /* kartu kegiatan disembunyikan di tab temporal */
+      if (temporal) drawTren().then(() => { if (chTren) chTren.resize(); });
       if (!temporal) {            /* kembali ke peta biasa: tahun terbaru, tanpa perbandingan */
         stopPlay();
         cmpYear = null; changed = null;
