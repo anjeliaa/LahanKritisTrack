@@ -13,7 +13,6 @@ use App\Http\Controllers\PerubahanController;
 use App\Http\Controllers\PetugasController;
 use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\PublicController;
-use App\Http\Controllers\TemporalController;
 use App\Http\Middleware\EnsureRole;
 use Illuminate\Support\Facades\Route;
 
@@ -24,9 +23,8 @@ Route::get('/', [PublicController::class, 'landing'])
 Route::get('/data/lahan.geojson', [PublicController::class, 'geojson'])
     ->name('lahan.geojson');
 
-// ---------- Visualisasi Temporal ----------
-Route::get('/visualisasi-temporal', [TemporalController::class, 'index'])
-    ->name('temporal.index');
+Route::get('/data/temporal', [PublicController::class, 'temporal'])
+    ->name('lahan.temporal');
 
 Route::post('/chatbot', [ChatbotController::class, 'ask'])
     ->middleware('throttle:15,1')

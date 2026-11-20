@@ -1,4 +1,3 @@
-```blade
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -16,10 +15,6 @@
     <style>
         html {
             scroll-behavior: smooth;
-        }
-
-        #visualisasi-temporal {
-            scroll-margin-top: 110px;
         }
     </style>
 </head>
@@ -58,11 +53,6 @@
 
             <a href="{{ route('home') }}#peta" data-scroll-map>
                 Peta Lahan Kritis
-            </a>
-
-            <a href="{{ route('home') }}#visualisasi-temporal"
-               data-scroll-temporal>
-                Visualisasi Temporal
             </a>
 
             <a href="{{ route('home') }}#kegiatan" data-scroll-section>
@@ -159,10 +149,6 @@
                 </li>
 
                 <li>
-                    <a href="{{ route('home') }}#visualisasi-temporal"
-                       data-scroll-temporal>
-                        Visualisasi Temporal
-                    </a>
                 </li>
 
                 <li>
@@ -301,60 +287,6 @@
             burger.setAttribute('aria-expanded', 'false');
         }
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Navigasi Temporal
-    |--------------------------------------------------------------------------
-    */
-
-    var temporalLinks = document.querySelectorAll(
-        'a[data-scroll-temporal]'
-    );
-
-    temporalLinks.forEach(function (link) {
-        link.addEventListener('click', function (event) {
-            var target = document.getElementById(
-                'visualisasi-temporal'
-            );
-
-            /*
-             * Jika sedang berada di halaman beranda,
-             * lakukan scroll langsung.
-             *
-             * Jika berada di halaman lain, biarkan browser
-             * membuka beranda melalui href link.
-             */
-
-            var homeUrl = new URL(
-                @json(route('home')),
-                window.location.origin
-            );
-
-            var currentUrl = new URL(window.location.href);
-
-            var isHomePage =
-                currentUrl.pathname === homeUrl.pathname;
-
-            if (!isHomePage || !target) {
-                return;
-            }
-
-            event.preventDefault();
-
-            scrollToTarget(target);
-
-            history.replaceState(
-                null,
-                '',
-                '#visualisasi-temporal'
-            );
-
-            closeMobileMenu();
-
-            setActive(link);
-        });
-    });
 
     /*
     |--------------------------------------------------------------------------
@@ -526,4 +458,3 @@
 
 </body>
 </html>
-```
