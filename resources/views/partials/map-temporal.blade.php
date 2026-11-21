@@ -43,7 +43,7 @@
 </div>
 
 <style>
-    .tbar[hidden],.tcharts[hidden],#kec-kegiatan-card[hidden]{display:none!important}
+    .tbar[hidden],.tcharts[hidden],#kec-kegiatan-card[hidden],#kec-detail-card[hidden]{display:none!important}
     .tbar{margin:0 0 14px;padding:16px 20px;background:#f6f8f6;border:1px solid #e2e9e4;border-radius:14px}
     .tbar-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
     .tbar-title{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
@@ -58,22 +58,25 @@
     .tbar-slider input[type=range]{width:100%;accent-color:#0c3a2b;cursor:pointer}
     .tbar-ticks{display:flex;justify-content:space-between;font-size:11px;color:#64748b;font-variant-numeric:tabular-nums;margin-top:2px}
 
-    /* grafik: dua kartu sejajar di bawah peta */
-    .tcharts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:16px 0 0;align-items:stretch}
-    .tcard{background:#fff;border:1px solid #e2e9e4;border-radius:14px;padding:16px 18px;min-width:0;display:flex;flex-direction:column}
-    .tcard-trend{grid-column:1;grid-row:1}
-    .tcard-cmp{grid-column:2;grid-row:1}
+    /* grafik: dua kartu ditumpuk di kolom kanan peta */
+    .tcharts{display:flex;flex-direction:column;gap:12px;margin:0}
+    .tcard{background:#fff;border:1px solid #e2e9e4;border-radius:14px;padding:14px 16px;min-width:0;display:flex;flex-direction:column}
     .tcard h4{margin:0 0 4px;font-size:14px;color:#0c3a2b}
-    .tcard p{margin:0 0 12px;font-size:12px;color:#64748b}
-    .tcard-cmp[hidden]{display:flex;align-items:center;justify-content:center;text-align:center;background:#f6f8f6;border-style:dashed;border-color:#cbd5d0}
-    .tcard-cmp[hidden]:empty::before{content:"Pilih tahun pada \"Bandingkan dengan\" untuk menampilkan perbandingan di sini.";max-width:240px;font-size:13px;line-height:1.5;color:#64748b}
-    .tbar-chart{position:relative;height:280px}
-    .tbar-chart-sm{height:200px}
-    .tbar-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 12px}
-    .tbar-stats>div{background:#f6f8f6;border:1px solid #e2e9e4;border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
-    .tbar-stats span{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:#64748b}
-    .tbar-stats b{font-size:16px;color:#0c3a2b;font-variant-numeric:tabular-nums}
+    .tcard p{margin:0 0 10px;font-size:11.5px;color:#64748b}
+    .tcard-cmp[hidden]{display:flex;align-items:center;justify-content:center;text-align:center;background:#f6f8f6;border-style:dashed;border-color:#cbd5d0;min-height:84px}
+    .tcard-cmp[hidden]:empty::before{content:"Pilih tahun pada \"Bandingkan dengan\" untuk menampilkan perbandingan di sini.";max-width:280px;font-size:12.5px;line-height:1.5;color:#64748b}
+    .tbar-chart{position:relative;height:200px}
+    .tbar-chart-sm{height:160px}
+    .tbar-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0 0 10px}
+    .tbar-stats>div{background:#f6f8f6;border:1px solid #e2e9e4;border-radius:10px;padding:7px 8px;display:flex;flex-direction:column;gap:2px;min-width:0}
+    .tbar-stats span{font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;color:#64748b}
+    .tbar-stats b{font-size:14px;color:#0c3a2b;font-variant-numeric:tabular-nums}
     .tbar-stats small{font-size:11px;color:#64748b}
+    .tbar-chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:10px;padding-top:10px;border-top:1px solid #e2e9e4;font-size:12px;color:#334155}
+    .tbar-chips:empty{display:none}
+    .tbar-chip-y{font-weight:700;color:#0c3a2b}
+    .tbar-chip i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px;border:1px solid rgba(0,0,0,.2)}
+    .tbar-chip b{font-variant-numeric:tabular-nums}
     .tbar-foot{margin:10px 0 0!important}
     .tbar-stats small.tbar-up,.tbar-stats small.tbar-down{font-weight:700}
     .tbar-up{color:#b45309}
@@ -83,10 +86,6 @@
         .tbar-actions{width:100%}
         .tbar-cmp{flex:1;white-space:normal}
         .tbar .tbar-cmp .select{flex:1;min-width:0}
-        .tcharts{grid-template-columns:minmax(0,1fr)}
-        .tcard-trend,.tcard-cmp{grid-column:1;grid-row:auto}
-        .tcard-trend{order:1}.tcard-cmp{order:2}
-        .tcard-cmp[hidden]{min-height:110px}
     }
 </style>
 @endif

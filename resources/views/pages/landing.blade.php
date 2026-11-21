@@ -260,7 +260,10 @@
                 </div>
 
                 <div class="info-col">
-                    <div class="info-card">
+                    {{-- GRAFIK TEMPORAL: menggantikan kartu detail di kolom kanan saat tab Visualisasi Temporal aktif --}}
+                    @include('partials.map-temporal-charts', ['tahunList' => $tahun_list])
+
+                    <div class="info-card" id="kec-detail-card">
                         <h3 id="kec-nama">Belum ada yang dipilih</h3>
 
                         <div class="eyebrow" id="kec-sub">KECAMATAN</div>
@@ -303,9 +306,6 @@
                     @include('partials.map-result-list')
                 </div>
             </div>
-
-            {{-- GRAFIK TEMPORAL (di bawah peta; tampil hanya di tab Visualisasi Temporal) --}}
-            @include('partials.map-temporal-charts', ['tahunList' => $tahun_list])
         </div>
     </div>
 </section>

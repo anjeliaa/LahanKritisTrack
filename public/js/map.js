@@ -298,6 +298,13 @@
       const warna = (c) => rg.tahun.map(() => COL[c]);
       const tepi = () => rg.tahun.map((y) => (y === curYear ? '#0f172a' : 'rgba(0,0,0,0)'));
       const lebar = () => rg.tahun.map((y) => (y === curYear ? 2 : 0));
+      /* kelas kecil (mis. Kritis) hampir tak terlihat pada batang bertumpuk, jadi nilainya ditulis per kelas untuk tahun yang tampil */
+      const chips = $('t-chips');
+      if (chips) {
+        const dy = rg.data[curYear] || {};
+        chips.innerHTML = '<span class="tbar-chip-y">' + curYear + '</span>' + kelas.map((c) =>
+          '<span class="tbar-chip"><i style="background:' + COL[c] + '"></i>' + LABEL[c] + ' <b>' + fmt(dy[c] ? dy[c].ha : 0) + ' ha</b></span>').join('');
+      }
       if (chTren) {
         chTren.data.datasets.forEach((d, i) => { d.backgroundColor = warna(kelas[i]); d.borderColor = tepi(); d.borderWidth = lebar(); });
         chTren.update('none');
@@ -343,7 +350,7 @@
           '<div><span>Total lahan kritis ' + b + '</span><b>' + fmt(tb) + ' ha</b><small class="' + arah + '">' + (sel > 0 ? '+' : '') + fmt(sel) + ' ha' + (ta > 0 ? ' (' + (pct > 0 ? '+' : '') + fmt(pct) + '%)' : '') + '</small></div>' +
         '</div>' +
         '<div class="tbar-chart tbar-chart-sm"><canvas id="t-chart-banding" role="img" aria-label="Perbandingan luas per kelas kekritisan tahun ' + a + ' dan ' + b + '"></canvas></div>' +
-        '<p class="tbar-foot">Total mencakup kelas Potensial Kritis, Agak Kritis, Kritis, dan Sangat Kritis.</p>';
+        '<p class="tbar-foot">Skala logaritmik agar kelas yang luasnya kecil tetap terlihat. Total mencakup kelas Potensial Kritis, Agak Kritis, Kritis, dan Sangat Kritis.</p>';
       if (window.Chart) {
         chBand = new Chart($('t-chart-banding'), {
           type: 'bar',
@@ -351,7 +358,24 @@
             { label: String(a), data: kelas.map((c) => ha(da, c)), backgroundColor: '#9db8a8', borderRadius: 4 },
             { label: String(b), data: kelas.map((c) => ha(db, c)), backgroundColor: '#0c3a2b', borderRadius: 4 },
           ] },
-          options: chartOpt({ plugins: { legend: { position: 'bottom' } } }),
+          options: chartOpt({
+            layout: { padding: { top: 16 } },
+            scales: {
+              x: { grid: { display: false } },
+              y: { type: 'logarithmic', min: 1, title: { display: true, text: 'Luas (ha, skala log)' },
+                   ticks: { callback: (v) => ([1, 10, 100, 1000, 10000, 100000].indexOf(v) >= 0 ? fmt(v) : '') } },
+            },
+            plugins: { legend: { position: 'bottom' } },
+          }),
+          plugins: [{
+            id: 'nilaiBatang',   /* tulis nilai ha di atas tiap batang agar kelas kecil tetap terbaca */
+            afterDatasetsDraw: (ch) => {
+              const ctx = ch.ctx;
+              ctx.save(); ctx.font = '600 10px sans-serif'; ctx.fillStyle = '#334155'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+              ch.data.datasets.forEach((d, i) => ch.getDatasetMeta(i).data.forEach((bar, k) => ctx.fillText(fmt(d.data[k]), bar.x, bar.y - 3)));
+              ctx.restore();
+            },
+          }],
         });
       }
     }).catch(() => { changed = null; box.hidden = false; box.innerHTML = '<p>Data perbandingan belum dapat dimuat.</p>'; });
@@ -433,7 +457,8 @@
       const temporal = tb.dataset.mtab === 'temporal';
       tabs.forEach((x) => { const on = x === tb; x.classList.toggle('active', on); x.setAttribute('aria-selected', on ? 'true' : 'false'); });
       TB.hidden = !temporal;
-      const TC = $('t-charts'); if (TC) TC.hidden = !temporal;                       /* grafik di bawah peta */
+      const TC = $('t-charts'); if (TC) TC.hidden = !temporal;                       /* grafik di kolom kanan */
+      const kd = $('kec-detail-card'); if (kd) kd.hidden = temporal;                 /* kartu detail kecamatan disembunyikan di tab temporal */
       const kc = $('kec-kegiatan-card'); if (kc) kc.hidden = temporal;               /* kartu kegiatan disembunyikan di tab temporal */
       if (temporal) drawTren().then(() => { if (chTren) chTren.resize(); });
       if (!temporal) {            /* kembali ke peta biasa: tahun terbaru, tanpa perbandingan */
